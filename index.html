@@ -37,7 +37,9 @@ h2{font-size:15px;letter-spacing:.2em;color:var(--gold);margin:4px 0 0;font-weig
 .cards{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:980px}
 .card{width:176px;max-width:100%;background:var(--paper2);border:1px solid #3d3428;padding:12px 12px 10px;cursor:pointer;text-align:left;
   color:var(--fg);font-family:inherit;transition:transform .12s,border-color .12s;position:relative;display:flex;flex-direction:column;gap:3px}
-.card:hover,.card:focus-visible{transform:translateY(-3px);border-color:var(--gold);outline:none}
+.card:hover,.card:focus-visible,.card.sel{transform:translateY(-3px);border-color:var(--gold);outline:none}
+.card.sel{box-shadow:0 0 0 2px var(--gold),0 8px 24px rgba(0,0,0,.5)}
+.card.sel::before{content:'▶';position:absolute;left:-18px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:12px}
 .card .gl{font-size:44px;font-weight:900;line-height:1;color:var(--cinnabar);font-family:var(--f-serif)}
 .card .nm{font-size:16px;font-weight:700;margin-top:4px}
 .card .ds{font-size:12px;color:var(--muted);line-height:1.45}
@@ -149,6 +151,7 @@ input.nm{background:var(--paper3);border:1px solid #3d3428;color:var(--fg);font-
   <p class="sub" id="lvtext"></p>
   <div class="cards" id="choices"></div>
   <div class="row"><button class="btn ghost" id="reroll">다시 뽑기</button><button class="btn ghost" id="skip">건너뛰기 (+5 金)</button><span class="keys" id="bans"></span></div>
+  <div class="keys"><kbd>←</kbd><kbd>→</kbd> 선택 · <kbd>Enter</kbd> 확정 · <kbd>1</kbd>~<kbd>4</kbd> 바로 선택 · <kbd>R</kbd> 다시 뽑기 · <kbd>X</kbd> 제외</div>
 </div>
 <div id="chest" class="overlay" hidden>
   <h1 style="font-size:clamp(32px,6vw,54px)">보물상자<small>寶 物 箱</small></h1>
@@ -290,7 +293,20 @@ function recalc(){const p=G.passives,h=HEROES.find(x=>x.id===G.hero);P.armor=p.a
 function dmgMul(){let m=P.dmg;if(G.hero==='zhangfei'&&G.hp<G.maxhp*.3)m*=2;if(G.rage>0)m*=1+.15*G.rage;if(G.buffPow>0)m*=1.3;return m;}
 
 /* ---------- 입력 ---------- */
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key==='Escape'&&running&&$('levelup').hidden&&$('chest').hidden)togglePause();if((e.key==='m'||e.key==='M')){audioInit();toggleMute();}});
+// 승급·상자 화면 키보드 조작: ←→ 또는 A/D 로 선택, Enter/Space 로 확정, R 다시 뽑기, X 제외, S 건너뛰기
+function cardNav(e){const lv=!$('levelup').hidden,ch=!$('chest').hidden;if(!lv&&!ch)return false;
+  if(ch){if(e.key==='Enter'||e.key===' '){$('chestok').click();e.preventDefault();}return true;}
+  const cards=[...$('choices').querySelectorAll('button.card')];if(!cards.length)return true;let i=cards.findIndex(c=>c.classList.contains('sel'));if(i<0)i=0;
+  const k=e.key.toLowerCase();
+  if(k==='arrowright'||k==='d'||k==='arrowdown'||k==='s'&&false){i=(i+1)%cards.length;}
+  else if(k==='arrowleft'||k==='a'||k==='arrowup'){i=(i-1+cards.length)%cards.length;}
+  else if(k==='enter'||k===' '){cards[i].click();e.preventDefault();return true;}
+  else if(k==='r'){$('reroll').click();return true;}
+  else if(k==='x'){const b=cards[i].querySelector('.ban');if(b)b.click();return true;}
+  else if(k==='1'||k==='2'||k==='3'||k==='4'){const n=+k-1;if(cards[n])cards[n].click();return true;}
+  else return true;
+  cards.forEach((c,j)=>c.classList.toggle('sel',j===i));cards[i].focus();e.preventDefault();return true;}
+addEventListener('keydown',e=>{if(cardNav(e))return;keys[e.key.toLowerCase()]=true;if(e.key==='Escape'&&running&&$('levelup').hidden&&$('chest').hidden)togglePause();if((e.key==='m'||e.key==='M')){audioInit();toggleMute();}});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 cv.addEventListener('pointerdown',e=>{joy.on=true;joy.sx=e.clientX;joy.sy=e.clientY;joy.dx=joy.dy=0;cv.setPointerCapture(e.pointerId);});
 cv.addEventListener('pointermove',e=>{if(!joy.on)return;joy.dx=e.clientX-joy.sx;joy.dy=e.clientY-joy.sy;});
@@ -577,6 +593,7 @@ function renderChoices(){
     if(o.kind==='p'){const users=Object.keys(WEAPONS).filter(k=>(WEAPONS[k].evo.need===o.id||WEAPONS[k].modern.need===o.id)&&G.weapons.find(w=>w.id===k));if(users.length){const d=document.createElement('div');d.className='ev';d.textContent='재료: '+users.map(k=>WEAPONS[k].name+(WEAPONS[k].modern.need===o.id?' 현대화':' 진화')).join(', ');b.appendChild(d);}}
     if(G.bans>0&&((o.kind==='p'&&!G.passives[o.id])||o.kind==='nw')){const x=document.createElement('span');x.className='ban';x.textContent='✕ 제외';x.title='이번 판에 다시 안 나옴';x.onclick=(ev)=>{ev.stopPropagation();G.bans--;G.banned[(o.kind==='p'?'p:':'w:')+o.id]=true;sfx('block');renderChoices();};b.appendChild(x);}
     b.onclick=()=>{apply(o);closeLevelUp();};box.appendChild(b);}
+  const first=box.querySelector('button.card');if(first)first.classList.add('sel');
   $('bans').textContent='제외 남음 '+G.bans;
   $('reroll').textContent='다시 뽑기 ('+G.rerolls+')';$('reroll').disabled=G.rerolls<=0;
   setTimeout(()=>box.querySelector('button')?.focus(),30);
@@ -1134,6 +1151,7 @@ function startGame(h){audioInit();bgmStart();const daily=$('dailychk').checked&&
   openingPick();}
 function openingPick(){paused=true;$('tut').style.display='none';$('lvtext').textContent='출진 전 군량. 패시브 하나를 골라 가져간다.';const box=$('choices');box.innerHTML='';const ids=Object.keys(PASSIVES).filter(id=>!G.passives[id]);for(let i=ids.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}
   for(const id of ids.slice(0,3)){const o={kind:'p',id,name:PASSIVES[id].name,gl:PASSIVES[id].gl,desc:PASSIVES[id].desc,tag:'군량'};const b=document.createElement('button');b.className='card';b.innerHTML='<span class="tag"></span><div class="gl"></div><div class="nm"></div><div class="ds"></div>';b.querySelector('.tag').textContent=o.tag;b.querySelector('.gl').textContent=o.gl;b.querySelector('.nm').textContent=o.name;b.querySelector('.ds').textContent=o.desc;b.onclick=()=>{apply(o);closeLevelUp();if(G.tutStep===0)tut(0);};box.appendChild(b);}
+  const first=box.querySelector('button.card');if(first)first.classList.add('sel');
   $('reroll').disabled=true;$('reroll').textContent='다시 뽑기';$('bans').textContent='';$('levelup').hidden=false;}
 function score(){return Math.floor(G.t)*10+G.kills*2+G.lvl*20;}
 function endGame(win){running=false;bgmStop();sfx(win?'win':'dead');$('hud').hidden=true;$('tut').style.display='none';
