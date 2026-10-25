@@ -139,7 +139,7 @@ input.nm{background:var(--paper3);border:1px solid #3d3428;color:var(--fg);font-
   </div>
   <div class="panel" id="p-shop"><p class="sub">전투에서 얻은 금화로 영구 강화를 산다. 모든 무장에 적용된다.</p><div class="shop" id="shop"></div></div>
   <div class="panel" id="p-codex"><h2>적</h2><div class="codex" id="cdx-e"></div><h2>무기</h2><div class="codex" id="cdx-w"></div><h2>진화</h2><div class="codex" id="cdx-v"></div></div>
-  <div class="panel" id="p-records"><div class="stats" id="records"></div></div>
+  <div class="panel" id="p-records"><div class="stats" id="records"></div><h2>기록 옮기기</h2><p class="sub">기록은 이 브라우저에만 저장돼요. 다른 기기나 브라우저로 옮기려면 코드를 복사해서 붙여넣으세요.</p><div class="row"><button class="btn ghost" id="exportrec">기록 코드 복사</button><input class="nm" id="reccode" placeholder="SG1.…" style="width:min(360px,80vw)"><button class="btn ghost" id="importrec">불러오기</button></div><p class="sub" id="recmsg"></p></div>
   <div class="panel" id="p-lb">
     <div class="row"><input class="nm" id="pname" maxlength="12" placeholder="이름 (순위표용)"><span class="sub" id="lbstatus">불러오는 중…</span></div>
     <div class="tabs"><button class="on" data-l="all">역대</button><button data-l="daily">오늘</button></div>
@@ -206,13 +206,13 @@ const PASSIVES={
   armor:{name:'철갑',gl:'甲',desc:'받는 피해 -1, 피해 -5%'},
   book:{name:'병서',gl:'書',desc:'경험치 획득 +12%'},
   magnet:{name:'초혼',gl:'招',desc:'흡수 범위 +30%, 보석이 더 빨리 날아옴'},
-  heart:{name:'심장',gl:'心',desc:'최대 체력 +20, 초당 0.25 회복'},
+  heart:{name:'심장',gl:'心',desc:'최대 체력 +20, 초당 0.2 회복'},
   power:{name:'신력',gl:'力',desc:'공격력 +10%'},
   cool:{name:'신속',gl:'迅',desc:'모든 무기 쿨다운 -8%'},
   amount:{name:'증원',gl:'增',desc:'투사체·불길·벼락 +1 (최대 2)',max:2},
   dur:{name:'지구',gl:'久',desc:'지속 시간·돌진 거리 +15%'},
   area:{name:'광역',gl:'廣',desc:'공격 범위 +10%'},
-  leech:{name:'흡혈',gl:'吸',desc:'처치 시 10% 확률로 체력 +2 (최대 3)',max:3},
+  leech:{name:'흡혈',gl:'吸',desc:'처치 시 12% 확률로 체력 +1. 초당 최대 1.2 회복 (최대 3)',max:3},
 };
 const HEROES=[
   {id:'guanyu',name:'관우',gl:'關',hp:120,spd:150,w:'guandao',desc:'청룡언월도로 적을 베어 넘긴다. 균형 잡힌 무장.',trait:'충의: 피해를 10% 확률로 무효화'},
@@ -289,7 +289,7 @@ function newGame(h,daily){
   return g;
 }
 const P={armor:0,dmg:1,magnet:1,spd:1,luck:1,cool:1,amt:0,dur:1,area:1,leech:0};
-function recalc(){const p=G.passives,h=HEROES.find(x=>x.id===G.hero);P.armor=p.armor||0;P.dmg=(1+.1*(p.power||0))*(1+.05*upLv('dmg'));P.magnet=(1+.3*(p.magnet||0))*(1+.1*upLv('magnet'))*(h.id==='zhaoyun'?1.4:1);P.spd=1+.12*(p.horse||0);P.luck=(1+.15*upLv('luck'))*(h.id==='sunshangxiang'?1.5:1);P.cool=Math.max(.5,1-.08*(p.cool||0));P.amt=Math.min(2,p.amount||0);P.dur=1+.15*(p.dur||0);P.area=1+.1*(p.area||0);P.leech=.1*(p.leech||0);}
+function recalc(){const p=G.passives,h=HEROES.find(x=>x.id===G.hero);P.armor=p.armor||0;P.dmg=(1+.1*(p.power||0))*(1+.05*upLv('dmg'));P.magnet=(1+.3*(p.magnet||0))*(1+.1*upLv('magnet'))*(h.id==='zhaoyun'?1.4:1);P.spd=1+.12*(p.horse||0);P.luck=(1+.15*upLv('luck'))*(h.id==='sunshangxiang'?1.5:1);P.cool=Math.max(.5,1-.08*(p.cool||0));P.amt=Math.min(2,p.amount||0);P.dur=1+.15*(p.dur||0);P.area=1+.1*(p.area||0);P.leech=.12*(p.leech||0);P.leechCap=1.2*(p.leech||0);}
 function dmgMul(){let m=P.dmg;if(G.hero==='zhangfei'&&G.hp<G.maxhp*.3)m*=2;if(G.rage>0)m*=1+.15*G.rage;if(G.buffPow>0)m*=1.3;return m;}
 
 /* ---------- 입력 ---------- */
@@ -331,7 +331,7 @@ function damage(e,d,col){
   if(e.type==='shield'){const a=Math.atan2(G.py-e.y,G.px-e.x);let da=a-e.face;da=Math.atan2(Math.sin(da),Math.cos(da));if(Math.abs(da)<1.1){d=Math.max(1,Math.round(d*.12));e.block=.15;sfx('block');}}
   if(G.dmgBy)G.dmgBy[curW]=(G.dmgBy[curW]||0)+Math.min(d,e.hp>0?e.hp:0);
   e.hp-=d;e.flash=.14;e.sq=.2;dtext(e.x+frnd(-8,8),e.y-e.r,d,col);sparks(e.x,e.y-e.r*.5,col,3,240);G.fx.push({x:e.x,y:e.y-e.r*.4,slashfx:true,a:frnd(0,7),col,life:.14,max:.14});
-  if(e.hp<=0&&!e.dead){e.dead=true;G.kills++;sfx('kill');const E=ENEMIES[e.type];if(P.leech>0&&rng()<P.leech&&G.hp<G.maxhp){G.hp=Math.min(G.maxhp,G.hp+2);dtext(G.px+frnd(-10,10),G.py-26,'+2','#9ee0c4');}hitstop=Math.max(hitstop,E.chest||E.boss?.12:.025);shake=Math.max(shake,E.chest||E.boss?.35:.06);G.combo=(G.combo||0)+1;G.comboT=1.2;if(G.combo%10===0){dtext(G.px,G.py-50,G.combo+' 連斬','#ffd080');}
+  if(e.hp<=0&&!e.dead){e.dead=true;G.kills++;sfx('kill');const E=ENEMIES[e.type];if(P.leech>0&&rng()<P.leech&&G.hp<G.maxhp&&(G.leechBud||0)>=1){G.leechBud-=1;G.hp=Math.min(G.maxhp,G.hp+1);dtext(G.px+frnd(-10,10),G.py-26,'+1','#9ee0c4');}hitstop=Math.max(hitstop,E.chest||E.boss?.12:.025);shake=Math.max(shake,E.chest||E.boss?.35:.06);G.combo=(G.combo||0)+1;G.comboT=1.2;if(G.combo%10===0){dtext(G.px,G.py-50,G.combo+' 連斬','#ffd080');}
     const v=e.xp;const n=v>=14?3:1;for(let i=0;i<n;i++)G.gems.push({x:e.x+rnd(-10,10),y:e.y+rnd(-10,10),v:v/n});
     if(rng()<.035*P.luck)G.gems.push({x:e.x,y:e.y,heal:true});
     if(rng()<.025*Math.min(1.6,P.luck)||E.chest||E.boss)G.gems.push({x:e.x,y:e.y,coin:E.gold||1});
@@ -488,7 +488,7 @@ function addGold(n){n=Math.round(n*(1+.1*upLv('gold'))*(G.daily?2:1));G.gold+=n;
 
 /* ---------- 업데이트 ---------- */
 function update(dt){
-  G.t+=dt;G.frame=(G.frame||0)+1;if(G.hit>0)G.hit-=dt;const low=G.hp<G.maxhp*.25;if(low){G.hb=(G.hb||0)-dt;if(G.hb<=0){G.hb=.85;sfx('heart');}}if(AU.bgm)AU.bgm.gain.value=low?.08:.22;if(G.comboT>0){G.comboT-=dt;if(G.comboT<=0)G.combo=0;}if(G.rageT>0){G.rageT-=dt;if(G.rageT<=0)G.rage=0;}if(G.buffPow>0)G.buffPow-=dt;
+  G.t+=dt;G.frame=(G.frame||0)+1;G.leechBud=Math.min(P.leechCap||0,(G.leechBud||0)+(P.leechCap||0)*dt);if(G.hit>0)G.hit-=dt;const low=G.hp<G.maxhp*.25;if(low){G.hb=(G.hb||0)-dt;if(G.hb<=0){G.hb=.85;sfx('heart');}}if(AU.bgm)AU.bgm.gain.value=low?.08:.22;if(G.comboT>0){G.comboT-=dt;if(G.comboT<=0)G.combo=0;}if(G.rageT>0){G.rageT-=dt;if(G.rageT<=0)G.rage=0;}if(G.buffPow>0)G.buffPow-=dt;
   const [mx,my]=moveVec();const sp=G.spd*P.spd;
   if(G.dash>0){curW='charge';G.dash-=dt;G.px+=Math.cos(G.dashA)*G.dashV*dt;G.py+=Math.sin(G.dashA)*G.dashV*dt;
     if(G.dash<=0&&G.dashEnd){const E=G.dashEnd;for(const e of G.enemies){if(e.dead)continue;const d=Math.hypot(e.x-G.px,e.y-G.py);if(d<E.R+e.r){damage(e,E.dmg,G.dashCol);const a=Math.atan2(e.y-G.py,e.x-G.px);e.kx+=Math.cos(a)*220;e.ky+=Math.sin(a)*220;}}G.fx.push({x:G.px,y:G.py,ring:true,R:E.R,col:G.dashCol,life:.35,max:.35});sfx('warcry');shake=Math.max(shake,.1);}
@@ -497,7 +497,7 @@ function update(dt){
   else{G.px+=mx*sp*dt;G.py+=my*sp*dt;}
   {const tmp={x:G.px,y:G.py};obstPush(tmp,14);G.px=tmp.x;G.py=tmp.y;}G.px=Math.max(-MAP,Math.min(MAP,G.px));G.py=Math.max(-MAP,Math.min(MAP,G.py));
   G.moving=!!(mx||my);if(mx||my){const l=Math.hypot(mx,my);G.fxF=mx/l;G.fy=my/l;if(G.tutStep===0)tut(1);}
-  {const rg=.4*upLv('regen')+.25*(G.passives.heart||0);if(rg>0){G.regen+=dt;if(G.regen>1){G.regen=0;G.hp=Math.min(G.maxhp,G.hp+rg);}}}
+  {const rg=.4*upLv('regen')+.2*(G.passives.heart||0);if(rg>0){G.regen+=dt;if(G.regen>1){G.regen=0;G.hp=Math.min(G.maxhp,G.hp+rg);}}}
   for(const w of G.weapons)fireWeapon(w,dt);
   doSpawns(dt);landmarks(dt);
   if(G.passives.horse){G.horseT+=dt;if(G.horseT>=180&&!META.unl.horse180){META.unl.horse180=true;saveMeta();}}
@@ -1149,7 +1149,7 @@ function startGame(h){audioInit();bgmStart();const daily=$('dailychk').checked&&
   if(G.tutStep===0)tut(0);else $('tut').style.display='none';
   requestAnimationFrame(loop);
   openingPick();}
-function openingPick(){paused=true;$('tut').style.display='none';$('lvtext').textContent='출진 전 군량. 패시브 하나를 골라 가져간다.';const box=$('choices');box.innerHTML='';const ids=Object.keys(PASSIVES).filter(id=>!G.passives[id]);for(let i=ids.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}
+function openingPick(){paused=true;$('tut').style.display='none';$('lvtext').textContent='출진 전 군량. 패시브 하나를 골라 가져간다.';const box=$('choices');box.innerHTML='';const ids=Object.keys(PASSIVES).filter(id=>!G.passives[id]&&id!=='leech');for(let i=ids.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}
   for(const id of ids.slice(0,3)){const o={kind:'p',id,name:PASSIVES[id].name,gl:PASSIVES[id].gl,desc:PASSIVES[id].desc,tag:'군량'};const b=document.createElement('button');b.className='card';b.innerHTML='<span class="tag"></span><div class="gl"></div><div class="nm"></div><div class="ds"></div>';b.querySelector('.tag').textContent=o.tag;b.querySelector('.gl').textContent=o.gl;b.querySelector('.nm').textContent=o.name;b.querySelector('.ds').textContent=o.desc;b.onclick=()=>{apply(o);closeLevelUp();if(G.tutStep===0)tut(0);};box.appendChild(b);}
   const first=box.querySelector('button.card');if(first)first.classList.add('sel');
   $('reroll').disabled=true;$('reroll').textContent='다시 뽑기';$('bans').textContent='';$('levelup').hidden=false;}
@@ -1238,6 +1238,15 @@ function renderStart(){dailyUI();
   const dk=todayKey();if(META.daily[dk])add('오늘의 도전',META.daily[dk].score.toLocaleString()+'점');
   $('pname').value=META.name||'';
 }
+$('exportrec').onclick=async()=>{const code='SG1.'+btoa(unescape(encodeURIComponent(JSON.stringify(META))));$('reccode').value=code;try{await navigator.clipboard.writeText(code);$('recmsg').textContent='기록 코드를 복사했어요. 다른 기기의 "불러오기"에 붙여넣으세요.';}catch(e){$('reccode').select();$('recmsg').textContent='아래 코드를 직접 복사하세요.';}};
+$('importrec').onclick=()=>{const v=$('reccode').value.trim();if(!v.startsWith('SG1.')){$('recmsg').textContent='코드 형식이 아니에요.';return;}
+  try{const m=JSON.parse(decodeURIComponent(escape(atob(v.slice(4)))));if(!m||typeof m!=='object'||!('gold' in m))throw 0;
+    // 병합: 더 큰 값 유지
+    const cur=META;const mg=Object.assign(defMeta(),m);mg.gold=Math.max(cur.gold,mg.gold);mg.goldTotal=Math.max(cur.goldTotal,mg.goldTotal);mg.kills=Math.max(cur.kills,mg.kills);mg.runs=Math.max(cur.runs,mg.runs);
+    for(const k in cur.up)mg.up[k]=Math.max(mg.up[k]||0,cur.up[k]);for(const k in cur.unl)mg.unl[k]=mg.unl[k]||cur.unl[k];for(const c of ['e','w','v'])for(const k in cur.cdx[c])mg.cdx[c][k]=true;for(const k in cur.syn)mg.syn[k]=true;
+    for(const k in cur.best){const a=cur.best[k],b=mg.best[k]||{};mg.best[k]={time:Math.max(a.time||0,b.time||0),kills:Math.max(a.kills||0,b.kills||0),score:Math.max(a.score||0,b.score||0),wins:Math.max(a.wins||0,b.wins||0)};}
+    META=mg;META.unl.guanyu=META.unl.zhangfei=true;saveMeta();renderStart();$('recmsg').textContent='불러왔어요. 두 기기의 기록 중 더 높은 쪽을 남겼습니다.';sfx('levelup');}
+  catch(e){$('recmsg').textContent='코드를 읽지 못했어요.';}};
 $('pname').onchange=()=>{META.name=$('pname').value.trim().slice(0,12);saveMeta();};
 renderStart();
 
