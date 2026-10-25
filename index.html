@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>삼국무쌍 서바이벌</title>
 <meta name="description" content="삼국지 풍 뱀서라이크 생존 게임. 무장 8명, 무기 조합, 보스, 일일 도전.">
+<meta property="og:title" content="삼국무쌍 서바이벌">
+<meta property="og:description" content="황건적의 난. 밀려오는 적도를 홀로 막아라. 20분을 버티면 천하가 그대의 것.">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
-<title>삼국무쌍 서바이벌</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Brush+Script&family=Noto+Serif+KR:wght@400;700;900&display=swap">
 <style>
 /* Layout: one fullscreen battlefield canvas, overlays stacked on top. Single dark theme by choice. */
@@ -1228,7 +1229,7 @@ async function dbInit(){if(dbTried)return DB;dbTried=true;try{const [db,user]=aw
 let lbMode='all';
 document.querySelectorAll('#p-lb .tabs button').forEach(b=>{b.onclick=()=>{document.querySelectorAll('#p-lb .tabs button').forEach(x=>x.classList.toggle('on',x===b));lbMode=b.dataset.l;loadBoard();};});
 async function loadBoard(){const st=$('lbstatus'),tb=$('lbtable');st.textContent='불러오는 중…';
-  const db=await dbInit();if(!db){st.textContent='순위표는 로그인한 상태에서 열 수 있어요. 기록은 이 기기에 저장됩니다.';tb.innerHTML='';return;}
+  const db=await dbInit();if(!db){st.textContent=window.claude?'순위표는 로그인한 상태에서 열 수 있어요. 기록은 이 기기에 저장됩니다.':'온라인 순위표는 아직 이 사이트에서 제공되지 않아요. 기록은 이 기기에 저장됩니다.';tb.innerHTML='';return;}
   try{let q=db.collection('scores');q=lbMode==='daily'?q.where('ddate','==',todayKey()).orderBy('dscore','desc').limit(30):q.orderBy('score','desc').limit(30);
     const snap=await q.get();tb.innerHTML='';const hd=document.createElement('tr');hd.innerHTML='<th>#</th><th>이름</th><th>무장</th><th class="r">생존</th><th class="r">처치</th><th class="r">점수</th>';tb.appendChild(hd);
     let i=0;for(const d of snap.docs){const v=d.data()||{};i++;const tr=document.createElement('tr');if(d.id===UID)tr.className='me';const t=lbMode==='daily'?v.dtime:v.time,k=lbMode==='daily'?v.dkills:v.kills,sc=lbMode==='daily'?v.dscore:v.score,hr=lbMode==='daily'?v.dhero:v.hero;
