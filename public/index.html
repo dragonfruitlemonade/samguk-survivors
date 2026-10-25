@@ -210,13 +210,13 @@ const PASSIVES={
   armor:{name:'철갑',gl:'甲',desc:'받는 피해 -1, 피해 -5%'},
   book:{name:'병서',gl:'書',desc:'경험치 획득 +12%'},
   magnet:{name:'초혼',gl:'招',desc:'흡수 범위 +30%, 보석이 더 빨리 날아옴'},
-  heart:{name:'심장',gl:'心',desc:'최대 체력 +20, 초당 0.2 회복'},
+  heart:{name:'심장',gl:'心',desc:'최대 체력 +25'},
   power:{name:'신력',gl:'力',desc:'공격력 +10%'},
   cool:{name:'신속',gl:'迅',desc:'모든 무기 쿨다운 -8%'},
   amount:{name:'증원',gl:'增',desc:'투사체·불길·벼락 +1 (최대 2)',max:2},
   dur:{name:'지구',gl:'久',desc:'지속 시간·돌진 거리 +15%'},
   area:{name:'광역',gl:'廣',desc:'공격 범위 +10%'},
-  leech:{name:'흡혈',gl:'吸',desc:'처치 시 12% 확률로 체력 +1. 초당 최대 1.2 회복 (최대 3)',max:3},
+  leech:{name:'흡혈',gl:'吸',desc:'처치 시 6% 확률로 체력 +1. 초당 최대 0.4 회복 (최대 2)',max:2},
 };
 const HEROES=[
   {id:'guanyu',name:'관우',gl:'關',hp:120,spd:150,w:'guandao',desc:'청룡언월도로 적을 베어 넘긴다. 균형 잡힌 무장.',trait:'충의: 피해를 10% 확률로 무효화'},
@@ -254,7 +254,7 @@ const SHOP=[
   {id:'hp',n:'체력 단련',d:'최대 체력 +8%',max:5,cost:[30,50,80,120,170]},
   {id:'dmg',n:'병기 연마',d:'공격력 +5%',max:5,cost:[40,60,90,130,180]},
   {id:'spd',n:'행군 훈련',d:'이동 속도 +4%',max:3,cost:[40,80,140]},
-  {id:'regen',n:'약초 지식',d:'초당 체력 0.4 회복',max:3,cost:[50,100,160]},
+  {id:'regen',n:'약초 지식',d:'초당 체력 0.15 회복',max:3,cost:[50,100,160]},
   {id:'luck',n:'천운',d:'만두·상자 드롭 +15%',max:3,cost:[40,80,140]},
   {id:'magnet',n:'초혼 부적',d:'경험치 흡수 범위 +10%',max:3,cost:[30,60,100]},
   {id:'gold',n:'군자금 관리',d:'금화 획득 +10%',max:3,cost:[50,90,150]},
@@ -293,7 +293,7 @@ function newGame(h,daily){
   return g;
 }
 const P={armor:0,dmg:1,magnet:1,spd:1,luck:1,cool:1,amt:0,dur:1,area:1,leech:0};
-function recalc(){const p=G.passives,h=HEROES.find(x=>x.id===G.hero);P.armor=p.armor||0;P.dmg=(1+.1*(p.power||0))*(1+.05*upLv('dmg'));P.magnet=(1+.3*(p.magnet||0))*(1+.1*upLv('magnet'))*(h.id==='zhaoyun'?1.4:1);P.spd=1+.12*(p.horse||0);P.luck=(1+.15*upLv('luck'))*(h.id==='sunshangxiang'?1.5:1);P.cool=Math.max(.5,1-.08*(p.cool||0));P.amt=Math.min(2,p.amount||0);P.dur=1+.15*(p.dur||0);P.area=1+.1*(p.area||0);P.leech=.12*(p.leech||0);P.leechCap=1.2*(p.leech||0);}
+function recalc(){const p=G.passives,h=HEROES.find(x=>x.id===G.hero);P.armor=p.armor||0;P.dmg=(1+.1*(p.power||0))*(1+.05*upLv('dmg'));P.magnet=(1+.3*(p.magnet||0))*(1+.1*upLv('magnet'))*(h.id==='zhaoyun'?1.4:1);P.spd=1+.12*(p.horse||0);P.luck=(1+.15*upLv('luck'))*(h.id==='sunshangxiang'?1.5:1);P.cool=Math.max(.5,1-.08*(p.cool||0));P.amt=Math.min(2,p.amount||0);P.dur=1+.15*(p.dur||0);P.area=1+.1*(p.area||0);P.leech=.06*(p.leech||0);P.leechCap=.4*(p.leech||0);}
 function dmgMul(){let m=P.dmg;if(G.hero==='zhangfei'&&G.hp<G.maxhp*.3)m*=2;if(G.rage>0)m*=1+.15*G.rage;if(G.buffPow>0)m*=1.3;return m;}
 
 /* ---------- 입력 ---------- */
@@ -337,7 +337,7 @@ function damage(e,d,col){
   e.hp-=d;e.flash=.14;e.sq=.2;dtext(e.x+frnd(-8,8),e.y-e.r,d,col);sparks(e.x,e.y-e.r*.5,col,3,240);G.fx.push({x:e.x,y:e.y-e.r*.4,slashfx:true,a:frnd(0,7),col,life:.14,max:.14});
   if(e.hp<=0&&!e.dead){e.dead=true;G.kills++;sfx('kill');const E=ENEMIES[e.type];if(P.leech>0&&rng()<P.leech&&G.hp<G.maxhp&&(G.leechBud||0)>=1){G.leechBud-=1;G.hp=Math.min(G.maxhp,G.hp+1);dtext(G.px+frnd(-10,10),G.py-26,'+1','#9ee0c4');}hitstop=Math.max(hitstop,E.chest||E.boss?.12:.025);shake=Math.max(shake,E.chest||E.boss?.35:.06);G.combo=(G.combo||0)+1;G.comboT=1.2;if(G.combo%10===0){dtext(G.px,G.py-50,G.combo+' 連斬','#ffd080');}
     const v=e.xp;const n=v>=14?3:1;for(let i=0;i<n;i++)G.gems.push({x:e.x+rnd(-10,10),y:e.y+rnd(-10,10),v:v/n});
-    if(rng()<.035*P.luck)G.gems.push({x:e.x,y:e.y,heal:true});
+    if(rng()<.02*P.luck)G.gems.push({x:e.x,y:e.y,heal:true});
     if(rng()<.025*Math.min(1.6,P.luck)||E.chest||E.boss)G.gems.push({x:e.x,y:e.y,coin:E.gold||1});
     if(E.chest||E.boss)G.chests.push({x:e.x,y:e.y,big:!!E.boss,t:0});
     if(E.chest||E.boss)glyph(e.x,e.y-e.r*.5,'滅',e.col,e.r*1.4,.6);if(!lowfx)for(let i=0;i<10;i++){const a=frnd(0,7),vv=frnd(40,200);part(e.x,e.y-e.r*.4,Math.cos(a)*vv,Math.sin(a)*vv-60,i%3?'#1a1410':'#8a1e14',frnd(2,5),frnd(.4,.8),600,'ink');}
@@ -484,7 +484,7 @@ function bossAct(e,dt){
 function landmarks(dt){
   for(const L of LANDMARKS){const cd=G.lm[L.k]||0;if(cd>0){G.lm[L.k]=cd-dt;continue;}
     if(Math.hypot(L.x-G.px,L.y-G.py)<130){G.lm[L.k]=90;
-      if(L.r==='heal'){G.hp=Math.min(G.maxhp,G.hp+Math.round(G.maxhp*.4));warn(L.k+' 보급: 만두',"#9ee0c4");glyph(L.x,L.y-80,'饅','#f3e2b8',80,1);sfx('heal');}
+      if(L.r==='heal'){G.hp=Math.min(G.maxhp,G.hp+Math.round(G.maxhp*.3));warn(L.k+' 보급: 만두',"#9ee0c4");glyph(L.x,L.y-80,'饅','#f3e2b8',80,1);sfx('heal');}
       else if(L.r==='power'){G.buffPow=30;warn(L.k+' 군기: 30초간 공격력 +30%',"#ffd080");glyph(L.x,L.y-80,'旗','#ffd080',80,1);sfx('warcry');}
       else{addGold(20);gainXp(G.need*.5);warn('중원 군자금 +20 金',"#ffd080");glyph(L.x,L.y-80,'金','#ffd080',80,1);sfx('gem');}}}
 }
@@ -501,7 +501,7 @@ function update(dt){
   else{G.px+=mx*sp*dt;G.py+=my*sp*dt;}
   {const tmp={x:G.px,y:G.py};obstPush(tmp,14);G.px=tmp.x;G.py=tmp.y;}G.px=Math.max(-MAP,Math.min(MAP,G.px));G.py=Math.max(-MAP,Math.min(MAP,G.py));
   G.moving=!!(mx||my);if(mx||my){const l=Math.hypot(mx,my);G.fxF=mx/l;G.fy=my/l;if(G.tutStep===0)tut(1);}
-  {const rg=.4*upLv('regen')+.2*(G.passives.heart||0);if(rg>0){G.regen+=dt;if(G.regen>1){G.regen=0;G.hp=Math.min(G.maxhp,G.hp+rg);}}}
+  {const rg=.15*upLv('regen');if(rg>0){G.regen+=dt;if(G.regen>1){G.regen=0;G.hp=Math.min(G.maxhp,G.hp+rg);}}}
   for(const w of G.weapons)fireWeapon(w,dt);
   doSpawns(dt);landmarks(dt);
   if(G.passives.horse){G.horseT+=dt;if(G.horseT>=180&&!META.unl.horse180){META.unl.horse180=true;saveMeta();}}
@@ -542,7 +542,7 @@ function update(dt){
   const mr=70*P.magnet;
   for(const g of G.gems){const dx=G.px-g.x,dy=G.py-g.y,d=Math.hypot(dx,dy);
     if(d<mr||g.pull){g.pull=true;const s=(380+(mr-d)*2)*(1+.25*(G.passives.magnet||0));g.x+=dx/d*s*dt;g.y+=dy/d*s*dt;}
-    if(d<16){g.got=true;if(g.heal){sfx('heal');G.hp=Math.min(G.maxhp,G.hp+30);dtext(G.px,G.py-24,'+30','#9ee0c4');glyph(G.px,G.py-40,'饅',"#f3e2b8",40,.5);}
+    if(d<16){g.got=true;if(g.heal){sfx('heal');G.hp=Math.min(G.maxhp,G.hp+25);dtext(G.px,G.py-24,'+25','#9ee0c4');glyph(G.px,G.py-40,'饅',"#f3e2b8",40,.5);}
       else if(g.coin){sfx('gem');addGold(g.coin);dtext(G.px,G.py-24,'+'+g.coin+' 金','#ffd080');}
       else{sfx('gem');gainXp(g.v);if(G.tutStep===1)tut(2);}}}
   G.gems=G.gems.filter(g=>!g.got);
@@ -611,7 +611,7 @@ function apply(o){
   else if(o.kind==='mod'){o.w.mod=true;sfx('modern');glyph(G.px,G.py-50,o.gl,'#4df0ff',120,1);warn(o.name);shake=.3;}
   else if(o.kind==='evo'){sfx('evo');o.w.evo=true;o.w.mod=true;o.w.lv=9;glyph(G.px,G.py-50,o.gl,'#d8a94a',140,1.2);shake=.4;warn(o.name);META.cdx.v[o.w.id]=true;saveMeta();}
   else if(o.kind==='nw'){G.weapons.push({id:o.id,lv:1,cd:0,ang:0,evo:false});META.cdx.w[o.id]=true;saveMeta();}
-  else if(o.kind==='p'){G.passives[o.id]=(G.passives[o.id]||0)+1;if(o.id==='horse'&&G.passives.horse===1)sfx('hoof');if(o.id==='heart'){G.maxhp+=20;G.hp+=20;}recalc();}
+  else if(o.kind==='p'){G.passives[o.id]=(G.passives[o.id]||0)+1;if(o.id==='horse'&&G.passives.horse===1)sfx('hoof');if(o.id==='heart'){G.maxhp+=25;G.hp+=25;}recalc();}
   else if(o.kind==='heal')G.hp=Math.min(G.maxhp,G.hp+40);
   slots();
 }
@@ -643,7 +643,7 @@ function slots(){const s=$('slots');s.innerHTML='';
     g.appendChild(row);s.appendChild(g);};
   mk('武','무기',G.weapons.map(w=>{const D=WEAPONS[w.id];return {gl:w.evo?D.evo.gl:w.mod?D.modern.gl:D.gl,name:w.evo?D.evo.name:w.mod?D.modern.name:D.name,lv:w.lv,mod:w.mod,evo:w.evo,col:D.col};}),5,false);
   mk('技','패시브',Object.keys(G.passives).map(id=>({id,gl:PASSIVES[id].gl,name:PASSIVES[id].name,lv:G.passives[id]})),5,true);}
-const PASSIVES_MAX={amount:2,leech:3};
+const PASSIVES_MAX={amount:2,leech:2};
 function hud(){$('xpfill').style.width=Math.min(100,G.xp/G.need*100)+'%';$('lvl').textContent='Lv '+G.lvl;$('kills').textContent='斬 '+G.kills;$('goldhud').textContent='金 '+G.gold;
   const m=Math.floor(G.t/60),s=Math.floor(G.t%60);$('timer').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
   const b=[];if(G.buffPow>0)b.push('旗 공격력 +30% '+Math.ceil(G.buffPow)+'s');if(G.rage>0)b.push('怒 분노 ×'+G.rage);if(G.hero==='zhangfei'&&G.hp<G.maxhp*.3)b.push('狂 광기: 공격력 2배');if(G.revive>0)b.push('生 부활 '+G.revive);
