@@ -476,7 +476,7 @@ function doSpawns(dt){
 }
 function bossAct(e,dt){
   e.pt+=dt;const p2=e.hp<e.mhp*.5;if(p2&&!e.p2){e.p2=true;warn(e.boss+' 분노!','#ff6a5a');sfx('boss');shake=.4;e.spd*=1.15;}
-  if(e.pat==='fire'&&e.pt>(p2?3.2:4.5)){e.pt=0;const n=p2?5:3;for(let i=0;i<n;i++){const x=G.px+rnd(-200,200),y=G.py+rnd(-200,200);if(Math.hypot(x-G.px,y-G.py)<70)continue;G.zones.push({x,y,enemy:true,R:p2?75:65,life:3,dps:p2?16:12,col:'#7b3f8f',gl:'董',tick:0,warnT:1.0});}sfx('fire');}
+  if(e.pat==='fire'&&e.pt>(p2?2.6:4)){e.pt=0;const n=p2?6:3;for(let i=0;i<n;i++){const x=G.px+rnd(-190,190),y=G.py+rnd(-190,190);G.zones.push({x,y,enemy:true,R:p2?85:70,life:3.5,dps:p2?18:14,col:'#7b3f8f',gl:'董',tick:0,warnT:.8});}sfx('fire');}
   if(e.pat==='charge'){
     if(e.cs==='wind'){e.cst-=dt;e.spd=0;if(e.cst<=0){e.cs='dash';e.cst=.6;const a=Math.atan2(G.py-e.y,G.px-e.x);e.kx=Math.cos(a)*700;e.ky=Math.sin(a)*700;sfx('rail');shake=.3;}}
     else if(e.cs==='dash'){e.cst-=dt;e.spd=0;e.kx*=1.04;e.ky*=1.04;if(!lowfx)part(e.x+frnd(-20,20),e.y+10,frnd(-30,30),frnd(-20,0),'rgba(190,170,130,.6)',frnd(4,8),.5,-20,'dust');if(e.cst<=0){e.kx=e.ky=0;if(p2&&(e.chain||0)<2){e.chain=(e.chain||0)+1;e.cs='wind';e.cst=.45;}else{e.chain=0;e.cs='rest';e.cst=p2?1.2:1.6;}}}
