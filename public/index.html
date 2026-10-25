@@ -351,7 +351,7 @@ function hurtPlayer(dm,src){
   if(G.dash>0)return;
   if(G.hero==='guanyu'&&rng()<.1){dtext(G.px,G.py-24,'無',"#9ee0c4");return;}
   if(G.hero==='lubu')dm*=1.2;dm=Math.max(1,Math.round((dm-P.armor)*(1-.05*P.armor)));
-  G.hp-=dm;G.hit=.6;shake=Math.max(shake,.15);dtext(G.px,G.py-20,'-'+dm,'#ff6a5a');sfx('hit');vibrate(40);
+  G.hp-=dm;G.hit=.5;shake=Math.max(shake,.15);dtext(G.px,G.py-20,'-'+dm,'#ff6a5a');sfx('hit');vibrate(40);
   if(G.hero==='xiahoudun'){G.rage=Math.min(3,G.rage+1);G.rageT=6;}
   if(G.hp<=0){if(G.revive>0){G.revive--;G.hp=Math.round(G.maxhp*.5);G.hit=2;warn('화타의 비방',"#9ee0c4");glyph(G.px,G.py-60,'生',"#9ee0c4",120,1.2);sfx('evo');for(const e of G.enemies){const d=Math.hypot(e.x-G.px,e.y-G.py);if(d<260){const a=Math.atan2(e.y-G.py,e.x-G.px);e.kx+=Math.cos(a)*500;e.ky+=Math.sin(a)*500;}}}
     else{G.hp=0;endGame(false);return true;}}
@@ -438,7 +438,7 @@ function explode(p){sfx('boom');shake=Math.max(shake,.12);for(const e of G.enemi
 /* ---------- 스폰 · 웨이브 · 보스 ---------- */
 function spawnEnemy(type,ang,dist){
   const E=ENEMIES[type];const d=dist||Math.max(VW,VH)*.62+40;ang=ang??rnd(0,Math.PI*2);
-  const tt=Math.max(0,G.t-90);const mul=(1+tt/160+Math.pow(Math.max(0,G.t-420)/240,2))*(G.daily?1.1:1);
+  const tt=Math.max(0,G.t-70);const mul=(1+tt/145+Math.pow(Math.max(0,G.t-360)/230,2))*(G.daily?1.1:1)*(E.boss?1.2:1);
   let x=G.px+Math.cos(ang)*d,y=G.py+Math.sin(ang)*d;const B=MAP+120;if(x<-B||x>B||y<-B||y>B){x=G.px-Math.cos(ang)*d;y=G.py-Math.sin(ang)*d;}x=Math.max(-B,Math.min(B,x));y=Math.max(-B,Math.min(B,y));
   {const tmp={x,y};obstPush(tmp,40);x=tmp.x;y=tmp.y;}
   const e={id:G.eid++,type,x,y,hp:E.hp*mul,mhp:E.hp*mul,spd:E.spd,dmg:E.dmg,r:E.r,xp:E.xp,gl:E.gl,col:E.col,boss:E.boss,pat:E.pat,pt:0,kx:0,ky:0,flash:0,dead:false,slow:0,face:Math.atan2(G.py-y,G.px-x),st:0,sh:rnd(0,2)};
@@ -455,16 +455,16 @@ function doSpawns(dt){
   const t=G.t;G.spawnT-=dt;
   const fin=t>=FINALE;
   if(G.spawnT<=0){
-    const iv=fin?.1:Math.max(.22,.75-t/900);G.spawnT=iv;
-    const cap=lowfx?200:300;const bossUp=G.enemies.some(e=>e.boss);const nearLM=LANDMARKS.some(L=>Math.hypot(L.x-G.px,L.y-G.py)<420);let n=G.enemies.length>cap?0:(fin?3:2+Math.floor(t/110));if(bossUp&&!fin)n=Math.round(n*.6);if(nearLM&&!fin)n+=1;
+    const iv=fin?.1:Math.max(.21,.72-t/850);G.spawnT=iv;
+    const cap=lowfx?200:300;const bossUp=G.enemies.some(e=>e.boss);const nearLM=LANDMARKS.some(L=>Math.hypot(L.x-G.px,L.y-G.py)<420);let n=G.enemies.length>cap?0:(fin?3:2+Math.floor(t/90));if(bossUp&&!fin)n=Math.round(n*.6);if(nearLM&&!fin)n+=1;
     for(let i=0;i<n;i++){
       let type='bandit';const r=rng();
-      if(t>60&&r<.3)type='soldier';if(t>150&&r<.2)type='archer';if(t>240&&r<.15)type='rider';if(t>200&&r>.9&&r<.96)type='bomber';if(t>270&&r>.84&&r<.9)type='shield';if(t>330&&r>.96)type='assassin';if(t>360&&r<.13)type='tiger';if(t>480&&r<.02)type='elite';
+      if(t>45&&r<.3)type='soldier';if(t>120&&r<.2)type='archer';if(t>210&&r<.15)type='rider';if(t>150&&r>.9&&r<.96)type='bomber';if(t>210&&r>.84&&r<.9)type='shield';if(t>270&&r>.96)type='assassin';if(t>300&&r<.13)type='tiger';if(t>420&&r<.025)type='elite';
       if(fin)type=r<.5?'rider':r<.8?'tiger':'soldier';
       spawnEnemy(type);
     }
   }
-  if(t>=G.nextWave&&!fin){G.nextWave+=60;const idx=Math.floor(rng()*WAVES.length);const W=(t<120)?WAVES[0]:WAVES[idx];const a=W.f();warn(W.n);sfx('boss');G.wave={a,t:3};}
+  if(t>=G.nextWave&&!fin){G.nextWave+=50;const idx=Math.floor(rng()*WAVES.length);const W=(t<120)?WAVES[0]:WAVES[idx];const a=W.f();warn(W.n);sfx('boss');G.wave={a,t:3};}
   if(G.wave){G.wave.t-=dt;if(G.wave.t<=0)G.wave=null;}
   const bosses=[[300,'dongzhuo'],[600,'lubu'],[900,'caocao']];
   for(const [bt,id] of bosses){if(t>=bt&&!G.bossDone[id]){G.bossDone[id]=true;spawnEnemy(id);warn(ENEMIES[id].boss+' 등장');shake=.5;sfx('boss');}}
@@ -520,7 +520,7 @@ function update(dt){
     e.x+=ux*e.spd*sm*mv*dt+e.kx*dt;e.y+=uy*e.spd*sm*mv*dt+e.ky*dt;if(!e.boss&&(e.id&3)===(G.frame&3))obstPush(e,e.r*.8);e.kx*=.82;e.ky*=.82;if(e.flash>0)e.flash-=dt;if(e.sq>0)e.sq-=dt;
     const k=((e.x/40)|0)+','+((e.y/40)|0);const o=sep.get(k);if(o){const ox=e.x-o.x,oy=e.y-o.y,od=Math.hypot(ox,oy)||1;if(od<e.r+o.r){e.x+=ox/od*1.5;e.y+=oy/od*1.5;}}else sep.set(k,e);
     if(d<e.r+44)near=true;
-    if(d<e.r+14&&G.hit<=0){if(hurtPlayer(e.dmg*(.7+Math.min(.3,G.t/600))))return;}
+    if(d<e.r+14&&G.hit<=0){if(hurtPlayer(e.dmg*(.75+Math.min(.3,G.t/500))))return;}
   }
   G.near=near;
   // projectiles
