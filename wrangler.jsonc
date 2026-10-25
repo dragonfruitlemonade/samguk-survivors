@@ -1,0 +1,10 @@
+{
+  "name": "samguk-survivors",
+  "main": "worker.js",
+  "compatibility_date": "2025-06-01",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "durable_objects": {
+    "bindings": [{ "name": "STORE", "class_name": "SaveStore" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SaveStore"] }]
+}

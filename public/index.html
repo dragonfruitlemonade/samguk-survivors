@@ -139,7 +139,11 @@ input.nm{background:var(--paper3);border:1px solid #3d3428;color:var(--fg);font-
   </div>
   <div class="panel" id="p-shop"><p class="sub">전투에서 얻은 금화로 영구 강화를 산다. 모든 무장에 적용된다.</p><div class="shop" id="shop"></div></div>
   <div class="panel" id="p-codex"><h2>적</h2><div class="codex" id="cdx-e"></div><h2>무기</h2><div class="codex" id="cdx-w"></div><h2>진화</h2><div class="codex" id="cdx-v"></div></div>
-  <div class="panel" id="p-records"><div class="stats" id="records"></div><h2>기록 옮기기</h2><p class="sub">기록은 이 브라우저에만 저장돼요. 다른 기기나 브라우저로 옮기려면 코드를 복사해서 붙여넣으세요.</p><div class="row"><button class="btn ghost" id="exportrec">기록 코드 복사</button><input class="nm" id="reccode" placeholder="SG1.…" style="width:min(360px,80vw)"><button class="btn ghost" id="importrec">불러오기</button></div><p class="sub" id="recmsg"></p></div>
+  <div class="panel" id="p-records"><div class="stats" id="records"></div><div id="cloudbox" hidden><h2>클라우드 저장</h2><p class="sub">브라우저 기록을 지워도 되살릴 수 있도록 서버에도 저장해요. 아래 <b>저장 코드</b>를 메모해 두세요. 판이 끝날 때마다 자동으로 올라갑니다.</p>
+<div class="row"><span class="gold" id="cloudkey" style="font-size:18px;letter-spacing:.08em"></span><button class="btn ghost" id="cloudcopy">코드 복사</button><button class="btn ghost" id="cloudsave">지금 저장</button></div>
+<div class="row"><input class="nm" id="cloudin" placeholder="SG-XXXX-XXXX" maxlength="12" style="width:150px;text-transform:uppercase"><button class="btn ghost" id="cloudload">코드로 불러오기</button></div>
+<p class="sub" id="cloudmsg"></p></div>
+<h2>기록 옮기기</h2><p class="sub">기록은 이 브라우저에만 저장돼요. 다른 기기나 브라우저로 옮기려면 코드를 복사해서 붙여넣으세요.</p><div class="row"><button class="btn ghost" id="exportrec">기록 코드 복사</button><input class="nm" id="reccode" placeholder="SG1.…" style="width:min(360px,80vw)"><button class="btn ghost" id="importrec">불러오기</button></div><p class="sub" id="recmsg"></p></div>
   <div class="panel" id="p-lb">
     <div class="row"><input class="nm" id="pname" maxlength="12" placeholder="이름 (순위표용)"><span class="sub" id="lbstatus">불러오는 중…</span></div>
     <div class="tabs"><button class="on" data-l="all">역대</button><button data-l="daily">오늘</button></div>
@@ -1160,7 +1164,7 @@ function endGame(win){running=false;bgmStop();sfx(win?'win':'dead');$('hud').hid
   META.gold+=earned;META.goldTotal+=earned;META.kills+=G.kills;if(META.goldTotal>=300)META.unl.gold300=true;if(META.kills>=500)META.unl.kills500=true;
   const sc=score();const b=META.best[G.hero]||{};if(!b.time||G.t>b.time)b.time=G.t;if(!b.kills||G.kills>b.kills)b.kills=G.kills;if(!b.score||sc>b.score)b.score=sc;if(win)b.wins=(b.wins||0)+1;META.best[G.hero]=b;
   if(G.daily){const dk=todayKey();if(!META.daily[dk]||META.daily[dk].score<sc)META.daily[dk]={score:sc,hero:G.hero,time:G.t,kills:G.kills};}
-  const newly=checkUnlocks();saveMeta();try{localStorage.removeItem('sg_save');}catch(e){}$('resumerow').hidden=true;
+  const newly=checkUnlocks();saveMeta();try{localStorage.removeItem('sg_save');}catch(e){}$('resumerow').hidden=true;cloudSave(true);
   $('endtitle').firstChild.textContent=win?'천하통일':'전사';$('endsub').textContent=win?'天 下 統 一':'戰 死';
   $('endgold').textContent='+0 金';{let shown=0;const step=Math.max(1,Math.ceil(earned/40));const iv=setInterval(()=>{shown=Math.min(earned,shown+step);$('endgold').textContent='+'+shown+' 金 (생존 보너스 '+bonus+') · 보유 '+(META.gold-earned+shown)+' 金';if(shown>=earned)clearInterval(iv);},30);}
   if(newly)setTimeout(()=>showUnlock(newly),600);
@@ -1228,7 +1232,7 @@ function renderStart(){dailyUI();
   for(const it of SHOP){const lv=upLv(it.id),max=lv>=it.max,cost=max?0:it.cost[lv];const d=document.createElement('div');d.className='it';
     d.innerHTML='<b></b><small></small><div class="pips"></div><button class="btn ghost"></button>';d.querySelector('b').textContent=it.n;d.querySelector('small').textContent=it.d;
     const pp=d.querySelector('.pips');for(let i=0;i<it.max;i++){const p=document.createElement('i');if(i<lv)p.className='on';pp.appendChild(p);}
-    const bt=d.querySelector('button');bt.textContent=max?'최대':cost+' 金';bt.disabled=max||META.gold<cost;bt.onclick=()=>{if(META.gold<cost)return;META.gold-=cost;META.up[it.id]=lv+1;saveMeta();sfx('levelup');renderStart();};sh.appendChild(d);}
+    const bt=d.querySelector('button');bt.textContent=max?'최대':cost+' 金';bt.disabled=max||META.gold<cost;bt.onclick=()=>{if(META.gold<cost)return;META.gold-=cost;META.up[it.id]=lv+1;saveMeta();sfx('levelup');renderStart();cloudSave(true);};sh.appendChild(d);}
   const ce=$('cdx-e');ce.innerHTML='';for(const id in ENEMIES){const E=ENEMIES[id],k=META.cdx.e[id];const d=document.createElement('div');d.className='e'+(k?'':' unk');d.innerHTML='<div class="g"></div><div></div>';d.querySelector('.g').textContent=k?E.gl:'?';d.lastChild.textContent=k?E.n:'???';ce.appendChild(d);}
   const cw=$('cdx-w');cw.innerHTML='';for(const id in WEAPONS){const W=WEAPONS[id],k=META.cdx.w[id];const d=document.createElement('div');d.className='e'+(k?'':' unk');d.innerHTML='<div class="g"></div><div></div>';d.querySelector('.g').textContent=k?W.gl:'?';d.lastChild.textContent=k?W.name:'???';cw.appendChild(d);}
   const cvx=$('cdx-v');cvx.innerHTML='';for(const id in WEAPONS){const W=WEAPONS[id],k=META.cdx.v[id];const d=document.createElement('div');d.className='e'+(k?'':' unk');d.innerHTML='<div class="g"></div><div></div>';d.querySelector('.g').textContent=k?W.evo.gl:'?';d.lastChild.textContent=k?W.evo.name:'???';cvx.appendChild(d);}
@@ -1250,13 +1254,34 @@ $('importrec').onclick=()=>{const v=$('reccode').value.trim();if(!v.startsWith('
 $('pname').onchange=()=>{META.name=$('pname').value.trim().slice(0,12);saveMeta();};
 renderStart();
 
+/* ---------- 클라우드 저장 (Cloudflare Worker, 로그인 없음) ---------- */
+let CLOUD=null; // true/false after ping
+function genKey(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const r=()=>A[Math.floor(Math.random()*A.length)];return 'SG-'+r()+r()+r()+r()+'-'+r()+r()+r()+r();}
+function cloudKey(){if(!META.ckey){META.ckey=genKey();saveMeta();}return META.ckey;}
+async function cloudPing(){if(CLOUD!==null)return CLOUD;if(window.claude){CLOUD=false;return false;}try{const r=await fetch('/api/ping',{cache:'no-store'});CLOUD=r.ok;}catch(e){CLOUD=false;}
+  $('cloudbox').hidden=!CLOUD;if(CLOUD){$('cloudkey').textContent=cloudKey();}return CLOUD;}
+async function cloudSave(silent){if(!(await cloudPing()))return false;try{const r=await fetch('/api/save?key='+cloudKey(),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(META)});
+  if(r.ok){META.cloudAt=Date.now();saveMeta();if(!silent)$('cloudmsg').textContent='저장했어요 ('+new Date().toLocaleTimeString()+')';return true;}}catch(e){}if(!silent)$('cloudmsg').textContent='서버에 저장하지 못했어요. 잠시 후 다시 시도하세요.';return false;}
+async function cloudLoad(key){if(!(await cloudPing()))return;key=(key||'').toUpperCase().trim();if(!/^SG-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(key)){$('cloudmsg').textContent='코드 형식은 SG-XXXX-XXXX 예요.';return;}
+  try{const r=await fetch('/api/save?key='+key,{cache:'no-store'});if(r.status===404){$('cloudmsg').textContent='그 코드로 저장된 기록이 없어요.';return;}const d=await r.json();if(!d.meta)throw 0;
+    const m=Object.assign(defMeta(),d.meta);m.ckey=key;META=m;META.unl.guanyu=META.unl.zhangfei=true;saveMeta();renderStart();$('cloudkey').textContent=key;$('cloudmsg').textContent='불러왔어요. 이 기기는 이제 코드 '+key+'를 씁니다.';sfx('levelup');}
+  catch(e){$('cloudmsg').textContent='불러오지 못했어요.';}}
+$('cloudcopy').onclick=async()=>{try{await navigator.clipboard.writeText(cloudKey());$('cloudmsg').textContent='저장 코드를 복사했어요. 안전한 곳에 메모해 두세요.';}catch(e){$('cloudmsg').textContent='코드: '+cloudKey();}};
+$('cloudsave').onclick=()=>cloudSave(false);
+$('cloudload').onclick=()=>cloudLoad($('cloudin').value);
+cloudPing();
+
 /* ---------- 천하 순위 (공유 DB) ---------- */
 let DB=null,UID=null,dbTried=false;
 async function dbInit(){if(dbTried)return DB;dbTried=true;try{const [db,user]=await Promise.all([window.claude?.use?.('db'),window.claude?.use?.('user')]);if(db&&user){DB=db;UID=await user.id();}}catch(e){DB=null;}return DB;}
 let lbMode='all';
 document.querySelectorAll('#p-lb .tabs button').forEach(b=>{b.onclick=()=>{document.querySelectorAll('#p-lb .tabs button').forEach(x=>x.classList.toggle('on',x===b));lbMode=b.dataset.l;loadBoard();};});
 async function loadBoard(){const st=$('lbstatus'),tb=$('lbtable');st.textContent='불러오는 중…';
-  const db=await dbInit();if(!db){st.textContent=window.claude?'순위표는 로그인한 상태에서 열 수 있어요. 기록은 이 기기에 저장됩니다.':'온라인 순위표는 아직 이 사이트에서 제공되지 않아요. 기록은 이 기기에 저장됩니다.';tb.innerHTML='';return;}
+  const db=await dbInit();
+  if(!db&&await cloudPing()){try{const r=await fetch('/api/board?mode='+lbMode+'&date='+todayKey(),{cache:'no-store'});const d=await r.json();tb.innerHTML='';const hd=document.createElement('tr');hd.innerHTML='<th>#</th><th>이름</th><th>무장</th><th class="r">생존</th><th class="r">처치</th><th class="r">점수</th>';tb.appendChild(hd);let i=0;
+      for(const v of d.rows||[]){i++;const tr=document.createElement('tr');if(v.id===cloudKey())tr.className='me';const cells=[i,String(v.name||'무명').slice(0,12),(HEROES.find(h=>h.id===v.hero)||{}).name||'?',Math.floor((v.time||0)/60)+':'+String(Math.floor((v.time||0)%60)).padStart(2,'0'),v.kills||0,(v.score||0).toLocaleString()];cells.forEach((c,j)=>{const td=document.createElement('td');td.textContent=c;if(j>=3)td.className='r';tr.appendChild(td);});tb.appendChild(tr);}
+      st.textContent=i?'상위 '+i+'명':'아직 기록이 없어요. 첫 번째가 되어보세요.';}catch(e){st.textContent='순위표를 불러오지 못했어요.';}return;}
+  if(!db){st.textContent=window.claude?'순위표는 로그인한 상태에서 열 수 있어요. 기록은 이 기기에 저장됩니다.':'온라인 순위표는 아직 이 사이트에서 제공되지 않아요. 기록은 이 기기에 저장됩니다.';tb.innerHTML='';return;}
   try{let q=db.collection('scores');q=lbMode==='daily'?q.where('ddate','==',todayKey()).orderBy('dscore','desc').limit(30):q.orderBy('score','desc').limit(30);
     const snap=await q.get();tb.innerHTML='';const hd=document.createElement('tr');hd.innerHTML='<th>#</th><th>이름</th><th>무장</th><th class="r">생존</th><th class="r">처치</th><th class="r">점수</th>';tb.appendChild(hd);
     let i=0;for(const d of snap.docs){const v=d.data()||{};i++;const tr=document.createElement('tr');if(d.id===UID)tr.className='me';const t=lbMode==='daily'?v.dtime:v.time,k=lbMode==='daily'?v.dkills:v.kills,sc=lbMode==='daily'?v.dscore:v.score,hr=lbMode==='daily'?v.dhero:v.hero;
@@ -1264,7 +1289,10 @@ async function loadBoard(){const st=$('lbstatus'),tb=$('lbtable');st.textContent
       cells.forEach((c,j)=>{const td=document.createElement('td');td.textContent=c;if(j>=3)td.className='r';tr.appendChild(td);});tb.appendChild(tr);}
     st.textContent=i?'상위 '+i+'명':'아직 기록이 없어요. 첫 번째가 되어보세요.';
   }catch(e){st.textContent='순위표를 불러오지 못했어요.';}}
-async function submitScore(sc,win){const db=await dbInit();if(!db||!UID)return '';
+async function submitScore(sc,win){const db=await dbInit();
+  if(!db&&await cloudPing()){try{const r=await fetch('/api/board',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:cloudKey(),name:META.name||'무명',hero:G.hero,score:sc,time:Math.floor(G.t),kills:G.kills,daily:!!G.daily,ddate:todayKey()})});const d=await r.json();
+      return d.rank?'천하 순위 '+d.rank+'위'+(d.drank?' · 오늘 '+d.drank+'위':''):'순위표에 기록됨';}catch(e){return '';}}
+  if(!db||!UID)return '';
   try{const ref=db.doc('scores/'+UID);const cur=(await ref.get()).data()||{};const name=META.name||'무명';const now=Date.now();const upd={name};
     if(!cur.score||sc>cur.score)Object.assign(upd,{score:sc,hero:G.hero,time:Math.floor(G.t),kills:G.kills,lvl:G.lvl,win:!!win,at:now});
     if(G.daily){const dk=todayKey();if(cur.ddate!==dk||!cur.dscore||sc>cur.dscore)Object.assign(upd,{ddate:dk,dscore:sc,dhero:G.hero,dtime:Math.floor(G.t),dkills:G.kills});}
