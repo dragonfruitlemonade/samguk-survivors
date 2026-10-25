@@ -234,7 +234,7 @@ const ENEMIES={
   soldier:{n:'창병',gl:'兵',hp:28,spd:62,dmg:8,r:16,xp:2,gold:1,col:'#8f9bb0'},
   archer:{n:'궁수',gl:'弓',hp:16,spd:85,dmg:6,r:13,xp:2,gold:1,col:'#7fa86b'},
   bomber:{n:'폭약병',gl:'炸',hp:22,spd:95,dmg:20,r:15,xp:3,gold:2,col:'#ff8a3a'},
-  shield:{n:'방패병',gl:'盾',hp:140,spd:48,dmg:12,r:18,xp:6,gold:3,col:'#8f9bb0'},
+  shield:{n:'방패병',gl:'盾',hp:110,spd:46,dmg:11,r:18,xp:6,gold:3,col:'#8f9bb0'},
   assassin:{n:'자객',gl:'刺',hp:26,spd:70,dmg:18,r:13,xp:4,gold:3,col:'#6a5a8a'},
   rider:{n:'기병',gl:'騎',hp:80,spd:98,dmg:12,r:19,xp:5,gold:2,col:'#b86a4a'},
   tiger:{n:'호랑이',gl:'虎',hp:60,spd:125,dmg:12,r:17,xp:5,gold:2,col:'#e8a23a'},
@@ -334,7 +334,7 @@ function dtext(x,y,v,col){if(G.texts.length>80)return;const big=typeof v==='numb
 function synergy(id){if(META.syn[id])return;META.syn[id]=true;saveMeta();warn('조합 발견: '+SYNERGIES[id]);sfx('levelup');}
 function damage(e,d,col){
   d=Math.round(d*dmgMul()*(e.slow>0?1.25:1));if(e.slow>0&&!META.syn.bound)synergy('bound');
-  if(e.type==='shield'){const a=Math.atan2(G.py-e.y,G.px-e.x);let da=a-e.face;da=Math.atan2(Math.sin(da),Math.cos(da));if(Math.abs(da)<1.1){d=Math.max(1,Math.round(d*.12));e.block=.15;sfx('block');}}
+  if(e.type==='shield'){const a=Math.atan2(G.py-e.y,G.px-e.x);let da=a-e.face;da=Math.atan2(Math.sin(da),Math.cos(da));if(Math.abs(da)<1.0){d=Math.max(1,Math.round(d*.2));e.block=.15;sfx('block');}}
   if(G.dmgBy)G.dmgBy[curW]=(G.dmgBy[curW]||0)+Math.min(d,e.hp>0?e.hp:0);
   e.hp-=d;e.flash=.14;e.sq=.2;dtext(e.x+frnd(-8,8),e.y-e.r,d,col);sparks(e.x,e.y-e.r*.5,col,3,240);G.fx.push({x:e.x,y:e.y-e.r*.4,slashfx:true,a:frnd(0,7),col,life:.14,max:.14});
   if(e.hp<=0&&!e.dead){e.dead=true;G.kills++;sfx('kill');const E=ENEMIES[e.type];if(P.leech>0&&rng()<P.leech&&G.hp<G.maxhp&&(G.leechBud||0)>=1){G.leechBud-=1;G.hp=Math.min(G.maxhp,G.hp+1);dtext(G.px+frnd(-10,10),G.py-26,'+1','#9ee0c4');}hitstop=Math.max(hitstop,E.chest||E.boss?.12:.025);shake=Math.max(shake,E.chest||E.boss?.35:.06);G.combo=(G.combo||0)+1;G.comboT=1.2;if(G.combo%10===0){dtext(G.px,G.py-50,G.combo+' 連斬','#ffd080');}
@@ -440,7 +440,7 @@ function explode(p){sfx('boom');shake=Math.max(shake,.12);for(const e of G.enemi
 /* ---------- 스폰 · 웨이브 · 보스 ---------- */
 function spawnEnemy(type,ang,dist){
   const E=ENEMIES[type];const d=dist||Math.max(VW,VH)*.62+40;ang=ang??rnd(0,Math.PI*2);
-  const tt=Math.max(0,G.t-70);const mul=(1+tt/145+Math.pow(Math.max(0,G.t-360)/230,2))*(G.daily?1.1:1)*(E.boss?1.2:1);
+  const tt=Math.max(0,G.t-70);const mul=(1+tt/185+Math.pow(Math.max(0,G.t-420)/240,2))*(G.daily?1.1:1)*(E.boss?1.1:1);
   let x=G.px+Math.cos(ang)*d,y=G.py+Math.sin(ang)*d;const B=MAP+120;if(x<-B||x>B||y<-B||y>B){x=G.px-Math.cos(ang)*d;y=G.py-Math.sin(ang)*d;}x=Math.max(-B,Math.min(B,x));y=Math.max(-B,Math.min(B,y));
   {const tmp={x,y};obstPush(tmp,40);x=tmp.x;y=tmp.y;}
   const e={spawnT:.35,id:G.eid++,type,x,y,hp:E.hp*mul,mhp:E.hp*mul,spd:E.spd,dmg:E.dmg,r:E.r,xp:E.xp,gl:E.gl,col:E.col,boss:E.boss,pat:E.pat,pt:0,kx:0,ky:0,flash:0,dead:false,slow:0,face:Math.atan2(G.py-y,G.px-x),st:0,sh:rnd(0,2)};
@@ -458,15 +458,17 @@ function doSpawns(dt){
   const fin=t>=FINALE;
   if(G.spawnT<=0){
     const iv=fin?.1:Math.max(.21,.72-t/850);G.spawnT=iv;
-    const cap=lowfx?200:300;const bossUp=G.enemies.some(e=>e.boss);const nearLM=LANDMARKS.some(L=>Math.hypot(L.x-G.px,L.y-G.py)<420);let n=G.enemies.length>cap?0:(fin?3:2+Math.floor(t/90));if(bossUp&&!fin)n=Math.round(n*.6);if(nearLM&&!fin)n+=1;
+    const cap=lowfx?200:300;const bossUp=G.enemies.some(e=>e.boss);G.cnt={shield:0,assassin:0,bomber:0};for(const e of G.enemies){if(G.cnt[e.type]!=null)G.cnt[e.type]++;}const nearLM=LANDMARKS.some(L=>Math.hypot(L.x-G.px,L.y-G.py)<420);let n=G.enemies.length>cap?0:(fin?3:2+Math.floor(t/90));if(bossUp&&!fin)n=Math.round(n*.45);if(nearLM&&!fin)n+=1;
     for(let i=0;i<n;i++){
       let type='bandit';const r=rng();
-      if(t>45&&r<.3)type='soldier';if(t>120&&r<.2)type='archer';if(t>240&&r<.15)type='rider';if(t>150&&r>.9&&r<.96)type='bomber';if(t>210&&r>.84&&r<.9)type='shield';if(t>270&&r>.96)type='assassin';if(t>300&&r<.13)type='tiger';if(t>420&&r<.025)type='elite';
+      if(t>45&&r<.3)type='soldier';if(t>120&&r<.2)type='archer';if(t>270&&r<.12)type='rider';if(t>150&&r>.92&&r<.96)type='bomber';if(t>240&&r>.86&&r<.9)type='shield';if(t>330&&r>.97)type='assassin';if(t>390&&r<.1)type='tiger';if(t>420&&r<.02)type='elite';
+      if(bossUp&&(type==='shield'||type==='assassin'||type==='tiger'||type==='bomber'))type='soldier';
+      if((type==='shield'&&G.cnt.shield>=4)||(type==='assassin'&&G.cnt.assassin>=3)||(type==='bomber'&&G.cnt.bomber>=4))type='bandit';
       if(fin)type=r<.5?'rider':r<.8?'tiger':'soldier';
       spawnEnemy(type);
     }
   }
-  if(t>=G.nextWave&&!fin){G.nextWave+=50;const idx=Math.floor(rng()*WAVES.length);const W=(t<120)?WAVES[0]:WAVES[idx];const a=W.f();warn(W.n);sfx('boss');G.wave={a,t:3};G.lastWave=W.n+'@'+Math.floor(t);}
+  if(t>=G.nextWave&&!fin){if(G.enemies.some(e=>e.boss)){G.nextWave+=15;}else{G.nextWave+=50;const idx=Math.floor(rng()*WAVES.length);const W=(t<120)?WAVES[0]:WAVES[idx];const a=W.f();warn(W.n);sfx('boss');G.wave={a,t:3};G.lastWave=W.n+'@'+Math.floor(t);}}
   if(G.wave){G.wave.t-=dt;if(G.wave.t<=0)G.wave=null;}
   const bosses=[[300,'dongzhuo'],[600,'lubu'],[900,'caocao']];
   for(const [bt,id] of bosses){if(t>=bt&&!G.bossDone[id]){G.bossDone[id]=true;const b=spawnEnemy(id,undefined,Math.min(VW,VH)*.38);b.spawnT=0;b.intro=1.8;G.bossIntro={e:b,t:1.8};sfx('boss');}}
@@ -474,7 +476,7 @@ function doSpawns(dt){
 }
 function bossAct(e,dt){
   e.pt+=dt;const p2=e.hp<e.mhp*.5;if(p2&&!e.p2){e.p2=true;warn(e.boss+' 분노!','#ff6a5a');sfx('boss');shake=.4;e.spd*=1.15;}
-  if(e.pat==='fire'&&e.pt>(p2?2.6:4)){e.pt=0;const n=p2?6:3;for(let i=0;i<n;i++){const x=G.px+rnd(-190,190),y=G.py+rnd(-190,190);G.zones.push({x,y,enemy:true,R:p2?85:70,life:3.5,dps:p2?18:14,col:'#7b3f8f',gl:'董',tick:0,warnT:.8});}sfx('fire');}
+  if(e.pat==='fire'&&e.pt>(p2?3.2:4.5)){e.pt=0;const n=p2?5:3;for(let i=0;i<n;i++){const x=G.px+rnd(-200,200),y=G.py+rnd(-200,200);if(Math.hypot(x-G.px,y-G.py)<70)continue;G.zones.push({x,y,enemy:true,R:p2?75:65,life:3,dps:p2?16:12,col:'#7b3f8f',gl:'董',tick:0,warnT:1.0});}sfx('fire');}
   if(e.pat==='charge'){
     if(e.cs==='wind'){e.cst-=dt;e.spd=0;if(e.cst<=0){e.cs='dash';e.cst=.6;const a=Math.atan2(G.py-e.y,G.px-e.x);e.kx=Math.cos(a)*700;e.ky=Math.sin(a)*700;sfx('rail');shake=.3;}}
     else if(e.cs==='dash'){e.cst-=dt;e.spd=0;e.kx*=1.04;e.ky*=1.04;if(!lowfx)part(e.x+frnd(-20,20),e.y+10,frnd(-30,30),frnd(-20,0),'rgba(190,170,130,.6)',frnd(4,8),.5,-20,'dust');if(e.cst<=0){e.kx=e.ky=0;if(p2&&(e.chain||0)<2){e.chain=(e.chain||0)+1;e.cs='wind';e.cst=.45;}else{e.chain=0;e.cs='rest';e.cst=p2?1.2:1.6;}}}
