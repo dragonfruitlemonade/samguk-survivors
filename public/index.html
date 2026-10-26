@@ -1395,14 +1395,16 @@ renderStart();
 
 /* ---------- 클라우드 저장 (Cloudflare Worker, 로그인 없음) ---------- */
 let CLOUD=null; // true/false after ping
+const API_BASE=(location.hostname.endsWith('.pages.dev')||location.hostname==='localhost'||!location.hostname.endsWith('workers.dev'))&&!window.claude?'https://samguk-survivors.tpghks9245.workers.dev':'';
+const api=(p)=>API_BASE+p;
 function genKey(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const r=()=>A[Math.floor(Math.random()*A.length)];return 'SG-'+r()+r()+r()+r()+'-'+r()+r()+r()+r();}
 function cloudKey(){if(!META.ckey){META.ckey=genKey();saveMeta();}return META.ckey;}
-async function cloudPing(){if(CLOUD!==null)return CLOUD;if(window.claude){CLOUD=false;return false;}try{const r=await fetch('/api/ping',{cache:'no-store'});CLOUD=r.ok;}catch(e){CLOUD=false;}
+async function cloudPing(){if(CLOUD!==null)return CLOUD;if(window.claude){CLOUD=false;return false;}try{const r=await fetch(api('/api/ping'),{cache:'no-store'});CLOUD=r.ok;}catch(e){CLOUD=false;}
   $('cloudbox').hidden=!CLOUD;if(CLOUD){$('cloudkey').textContent=cloudKey();}return CLOUD;}
-async function cloudSave(silent){if(!(await cloudPing()))return false;try{const r=await fetch('/api/save?key='+cloudKey(),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(META)});
+async function cloudSave(silent){if(!(await cloudPing()))return false;try{const r=await fetch(api('/api/save?key='+cloudKey()),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(META)});
   if(r.ok){META.cloudAt=Date.now();saveMeta();if(!silent)$('cloudmsg').textContent='저장했어요 ('+new Date().toLocaleTimeString()+')';return true;}}catch(e){}if(!silent)$('cloudmsg').textContent='서버에 저장하지 못했어요. 잠시 후 다시 시도하세요.';return false;}
 async function cloudLoad(key){if(!(await cloudPing()))return;key=(key||'').toUpperCase().trim();if(!/^SG-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(key)){$('cloudmsg').textContent='코드 형식은 SG-XXXX-XXXX 예요.';return;}
-  try{const r=await fetch('/api/save?key='+key,{cache:'no-store'});if(r.status===404){$('cloudmsg').textContent='그 코드로 저장된 기록이 없어요.';return;}const d=await r.json();if(!d.meta)throw 0;
+  try{const r=await fetch(api('/api/save?key='+key),{cache:'no-store'});if(r.status===404){$('cloudmsg').textContent='그 코드로 저장된 기록이 없어요.';return;}const d=await r.json();if(!d.meta)throw 0;
     const m=Object.assign(defMeta(),d.meta);m.ckey=key;META=m;META.unl.guanyu=META.unl.zhangfei=true;saveMeta();renderStart();$('cloudkey').textContent=key;$('cloudmsg').textContent='불러왔어요. 이 기기는 이제 코드 '+key+'를 씁니다.';sfx('levelup');}
   catch(e){$('cloudmsg').textContent='불러오지 못했어요.';}}
 $('cloudcopy').onclick=async()=>{try{await navigator.clipboard.writeText(cloudKey());$('cloudmsg').textContent='저장 코드를 복사했어요. 안전한 곳에 메모해 두세요.';}catch(e){$('cloudmsg').textContent='코드: '+cloudKey();}};
@@ -1417,7 +1419,7 @@ let lbMode='all';
 document.querySelectorAll('#p-lb .tabs button').forEach(b=>{b.onclick=()=>{document.querySelectorAll('#p-lb .tabs button').forEach(x=>x.classList.toggle('on',x===b));lbMode=b.dataset.l;loadBoard();};});
 async function loadBoard(){const st=$('lbstatus'),tb=$('lbtable');st.textContent='불러오는 중…';
   const db=await dbInit();
-  if(!db&&await cloudPing()){try{const r=await fetch('/api/board?mode='+lbMode+'&date='+todayKey(),{cache:'no-store'});const d=await r.json();tb.innerHTML='';const hd=document.createElement('tr');hd.innerHTML='<th>#</th><th>이름</th><th>무장</th><th class="r">생존</th><th class="r">처치</th><th class="r">점수</th>';tb.appendChild(hd);let i=0;
+  if(!db&&await cloudPing()){try{const r=await fetch(api('/api/board?mode='+lbMode+'&date='+todayKey()),{cache:'no-store'});const d=await r.json();tb.innerHTML='';const hd=document.createElement('tr');hd.innerHTML='<th>#</th><th>이름</th><th>무장</th><th class="r">생존</th><th class="r">처치</th><th class="r">점수</th>';tb.appendChild(hd);let i=0;
       for(const v of d.rows||[]){i++;const tr=document.createElement('tr');if(v.id===cloudKey())tr.className='me';const cells=[i,String(v.name||'무명').slice(0,12),(HEROES.find(h=>h.id===v.hero)||{}).name||'?',Math.floor((v.time||0)/60)+':'+String(Math.floor((v.time||0)%60)).padStart(2,'0'),v.kills||0,(v.score||0).toLocaleString()];cells.forEach((c,j)=>{const td=document.createElement('td');td.textContent=c;if(j>=3)td.className='r';tr.appendChild(td);});tb.appendChild(tr);}
       st.textContent=i?'상위 '+i+'명':'아직 기록이 없어요. 첫 번째가 되어보세요.';}catch(e){st.textContent='순위표를 불러오지 못했어요.';}return;}
   if(!db){st.textContent=window.claude?'순위표는 로그인한 상태에서 열 수 있어요. 기록은 이 기기에 저장됩니다.':'온라인 순위표는 아직 이 사이트에서 제공되지 않아요. 기록은 이 기기에 저장됩니다.';tb.innerHTML='';return;}
@@ -1429,7 +1431,7 @@ async function loadBoard(){const st=$('lbstatus'),tb=$('lbtable');st.textContent
     st.textContent=i?'상위 '+i+'명':'아직 기록이 없어요. 첫 번째가 되어보세요.';
   }catch(e){st.textContent='순위표를 불러오지 못했어요.';}}
 async function submitScore(sc,win){const db=await dbInit();
-  if(!db&&await cloudPing()){try{const r=await fetch('/api/board',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:cloudKey(),name:META.name||'무명',hero:G.hero,score:sc,time:Math.floor(G.t),kills:G.kills,daily:!!G.daily,ddate:todayKey()})});const d=await r.json();
+  if(!db&&await cloudPing()){try{const r=await fetch(api('/api/board'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:cloudKey(),name:META.name||'무명',hero:G.hero,score:sc,time:Math.floor(G.t),kills:G.kills,daily:!!G.daily,ddate:todayKey()})});const d=await r.json();
       return d.rank?'천하 순위 '+d.rank+'위'+(d.drank?' · 오늘 '+d.drank+'위':''):'순위표에 기록됨';}catch(e){return '';}}
   if(!db||!UID)return '';
   try{const ref=db.doc('scores/'+UID);const cur=(await ref.get()).data()||{};const name=META.name||'무명';const now=Date.now();const upd={name};

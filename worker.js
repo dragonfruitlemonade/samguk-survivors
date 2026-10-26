@@ -1,5 +1,5 @@
 // 삼국무쌍 서바이벌 — 클라우드 저장 + 천하 순위 (Durable Object, 로그인 없음)
-const JSONH = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
+const JSONH = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET,POST,OPTIONS', 'access-control-allow-headers': 'content-type' };
 const ok = (o) => new Response(JSON.stringify(o), { headers: JSONH });
 const bad = (m, s = 400) => new Response(JSON.stringify({ error: m }), { status: s, headers: JSONH });
 const KEY_RE = /^SG-[A-Z2-9]{4}-[A-Z2-9]{4}$/;
@@ -8,6 +8,7 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(req);
+    if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: JSONH });
     try {
       if (url.pathname === '/api/ping') return ok({ ok: true });
       if (url.pathname === '/api/save') {
