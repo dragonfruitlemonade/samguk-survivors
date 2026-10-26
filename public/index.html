@@ -438,8 +438,15 @@ function explode(p){sfx('boom');shake=Math.max(shake,.12);for(const e of G.enemi
   G.fx.push({x:p.x,y:p.y,boom:true,R:p.blast,col:p.col,life:.35,max:.35});glyph(p.x,p.y,'爆','#ffb070',p.blast*.9,.4);}
 
 /* ---------- 스폰 · 웨이브 · 보스 ---------- */
+const GATE_POS=[{x:0,y:-2200,ix:0,iy:1},{x:0,y:2200,ix:0,iy:-1},{x:-2200,y:0,ix:1,iy:0},{x:2200,y:0,ix:-1,iy:0}];
+function nearGate(maxd){let best=null,bd=maxd;for(const g of GATE_POS){const d=Math.hypot(g.x-G.px,g.y-G.py);if(d<bd){bd=d;best=g;}}return best;}
+function spawnFromGate(type,g){const E=ENEMIES[type];const x=g.x+g.ix*(30+rnd(0,40))+(g.ix?0:rnd(-26,26)),y=g.y+g.iy*(30+rnd(0,40))+(g.iy?0:rnd(-26,26));
+  const tt=Math.max(0,G.t-70);const mul=(1+tt/185+Math.pow(Math.max(0,G.t-420)/240,2))*(G.daily?1.1:1)*(E.boss?1.1:1);
+  const e={spawnT:.5,gate:true,id:G.eid++,type,x,y,hp:E.hp*mul,mhp:E.hp*mul,spd:E.spd,dmg:E.dmg,r:E.r,xp:E.xp,gl:E.gl,col:E.col,boss:E.boss,pat:E.pat,pt:0,kx:g.ix*120,ky:g.iy*120,flash:0,dead:false,slow:0,face:Math.atan2(G.py-y,G.px-x),st:0,sh:rnd(0,2)};
+  G.enemies.push(e);if(!META.cdx.e[type]){META.cdx.e[type]=true;saveMeta();}return e;}
 function spawnEnemy(type,ang,dist){
-  const E=ENEMIES[type];const d=dist||Math.max(VW,VH)*.62+40;ang=ang??rnd(0,Math.PI*2);
+  const E=ENEMIES[type];if(!E.boss&&!dist){const g=nearGate(820);if(g&&rng()<.55)return spawnFromGate(type,g);}
+  const d=dist||Math.max(VW,VH)*.62+40;ang=ang??rnd(0,Math.PI*2);
   const tt=Math.max(0,G.t-70);const mul=(1+tt/185+Math.pow(Math.max(0,G.t-420)/240,2))*(G.daily?1.1:1)*(E.boss?1.1:1);
   let x=G.px+Math.cos(ang)*d,y=G.py+Math.sin(ang)*d;const B=MAP+120;if(x<-B||x>B||y<-B||y>B){x=G.px-Math.cos(ang)*d;y=G.py-Math.sin(ang)*d;}x=Math.max(-B,Math.min(B,x));y=Math.max(-B,Math.min(B,y));
   {const tmp={x,y};obstPush(tmp,40);x=tmp.x;y=tmp.y;}
@@ -447,11 +454,11 @@ function spawnEnemy(type,ang,dist){
   G.enemies.push(e);if(!META.cdx.e[type]){META.cdx.e[type]=true;saveMeta();}return e;
 }
 const WAVES=[
-  {n:'황건적 대군',f:()=>{const a=rnd(0,7);for(let i=0;i<22;i++)spawnEnemy('bandit',a+rnd(-.5,.5));return a;}},
-  {n:'기병 돌격',f:()=>{const a=rnd(0,7);for(let i=0;i<9;i++)spawnEnemy(G.t>270?'rider':'soldier',a+(i-4)*.045,Math.max(VW,VH)*.62+60+i*30);return a;}},
+  {n:'황건적 대군',f:()=>{const g=nearGate(1100);if(g){for(let i=0;i<22;i++)setTimeout(()=>{},0),spawnFromGate('bandit',g);return Math.atan2(g.y-G.py,g.x-G.px);}const a=rnd(0,7);for(let i=0;i<22;i++)spawnEnemy('bandit',a+rnd(-.5,.5));return a;}},
+  {n:'기병 돌격',f:()=>{const g=nearGate(1100);if(g){for(let i=0;i<9;i++){const e=spawnFromGate(G.t>270?'rider':'soldier',g);e.x-=g.ix*i*34;e.y-=g.iy*i*34;e.spawnT=.2+i*.08;}return Math.atan2(g.y-G.py,g.x-G.px);}const a=rnd(0,7);for(let i=0;i<9;i++)spawnEnemy(G.t>270?'rider':'soldier',a+(i-4)*.045,Math.max(VW,VH)*.62+60+i*30);return a;}},
   {n:'호랑이 떼 포위',f:()=>{for(let i=0;i<10;i++)spawnEnemy(G.t>300?'tiger':'archer',i*Math.PI*2/10);return null;}},
   {n:'궁수 매복',f:()=>{const a=rnd(0,7);for(let i=0;i<14;i++)spawnEnemy('archer',a+i*.12);return a;}},
-  {n:'장수 출진',f:()=>{const a=rnd(0,7);spawnEnemy('elite',a);for(let i=0;i<8;i++)spawnEnemy('soldier',a+rnd(-.4,.4));return a;}},
+  {n:'장수 출진',f:()=>{const g=nearGate(1100);if(g){spawnFromGate('elite',g);for(let i=0;i<8;i++)spawnFromGate('soldier',g);return Math.atan2(g.y-G.py,g.x-G.px);}const a=rnd(0,7);spawnEnemy('elite',a);for(let i=0;i<8;i++)spawnEnemy('soldier',a+rnd(-.4,.4));return a;}},
 ];
 function doSpawns(dt){
   const t=G.t;G.spawnT-=dt;
@@ -517,7 +524,7 @@ function update(dt){
     if(e.intro>0){e.intro-=dt;if(e.intro<=0){shake=.6;sfx('boom');for(let i=0;i<18;i++){const a=frnd(0,7),v=frnd(80,260);part(e.x,e.y+8,Math.cos(a)*v,Math.sin(a)*v*.4,'rgba(190,170,130,.7)',frnd(4,9),frnd(.4,.8),-10,'dust');}G.fx.push({x:e.x,y:e.y+6,ring:true,R:140,col:'#d8a94a',life:.5,max:.5});}continue;}
     if(e.pat)bossAct(e,dt);
     const dx=G.px-e.x,dy=G.py-e.y,d=Math.hypot(dx,dy)||1;
-    if(e.spawnT>0){e.spawnT-=dt;continue;}
+    if(e.spawnT>0){e.spawnT-=dt;if(e.gate){e.x+=e.kx*dt;e.y+=e.ky*dt;}continue;}
     const sm=e.stun>0?0:e.slow>0?(e.slowK||.45):1;if(e.slow>0)e.slow-=dt;else e.slowK=0;if(e.stun>0)e.stun-=dt;let mv=1,ux=dx/d,uy=dy/d;
     if(e.type==='archer'){e.sh-=dt;if(d<200)mv=-.8;else if(d<330)mv=0;if(e.sh<=0&&d<420){e.sh=3.0;e.atkT=.3;const a=Math.atan2(dy,dx)+rnd(-.08,.08);G.eproj.push({x:e.x,y:e.y,vx:Math.cos(a)*300,vy:Math.sin(a)*300,life:1.7,dmg:e.dmg});sfx('arrow');}}
     else if(e.type==='bomber'){if(e.fuse!=null){e.fuse-=dt;mv=0;if(e.fuse<=0){e.dead=true;const R=105;G.fx.push({x:e.x,y:e.y,boom:true,R,col:'#ff8a3a',life:.4,max:.4});glyph(e.x,e.y,'炸','#ffb070',70,.5);sfx('boom');shake=Math.max(shake,.3);if(Math.hypot(G.px-e.x,G.py-e.y)<R+14&&G.hit<=0){G.lastHurt='bomb';if(hurtPlayer(e.dmg))return;}for(const o of G.enemies){if(!o.dead&&o!==e&&Math.hypot(o.x-e.x,o.y-e.y)<R)damage(o,30,'#ff8a3a');}G.corpses.push({x:e.x,y:e.y,type:'bomber',flip:false,life:.5,max:.5});continue;}}
@@ -953,94 +960,133 @@ function drawFire(ctx,z,a){
       ctx.quadraticCurveTo(fx+w*k*.9+lean*.3,fy-h*k*.45,fx+w*k,fy);ctx.closePath();ctx.fill();}}
   ctx.restore();
 }
-// ---- 성곽: 맵 바깥을 둘러싼 석성 + 기와 성가퀴 + 망루 + 성문, 바깥은 먼 산과 안개 ----
-let CASTLE={wall:null,tower:null,gate:null,mount:null};
+// ---- 성곽: 북쪽은 벽면, 동·서·남쪽은 성벽 윗길(통로) + 양쪽 성가퀴. 모서리 망루, 성문, 먼 산 ----
+let CASTLE={};
 function castleTiles(){
-  const px=(q,x,y,w,h,c)=>{q.fillStyle=c;q.fillRect(x,y,w,h);};
-  // 성벽 타일 128x120 (위: 기와 지붕 처마 / 중: 성가퀴 / 아래: 석축)  — 북쪽 벽 기준(안쪽이 아래)
-  const w=document.createElement('canvas');w.width=128;w.height=120;const q=w.getContext('2d');
-  // 석축
-  for(let y=56;y<120;y+=16)for(let x=0;x<128;x+=32){const off=((y/16)|0)%2?16:0;const sx=(x+off)%128;px(q,sx,y,30,14,['#6e6556','#766d5e','#685f50'][((x+y)/16|0)%3]);px(q,sx,y,30,2,'#8a8170');px(q,sx,y+12,30,2,'#4e4639');px(q,sx+28,y,2,14,'#4e4639');}
-  // 그림자 띠(벽 아래 바닥 접지)
-  px(q,0,116,128,4,'rgba(0,0,0,.35)');
-  // 성가퀴(여장): 회벽 + 총안
-  px(q,0,34,128,22,'#c9bfa8');px(q,0,34,128,3,'#e3dac4');px(q,0,53,128,3,'#9c927c');
-  for(let x=8;x<128;x+=32){px(q,x,40,10,12,'#2a241d');px(q,x+2,42,6,8,'#15110c');}
-  // 기와 지붕 (처마 2단)
-  px(q,0,22,128,12,'#3f3a44');for(let x=0;x<128;x+=8){px(q,x,22,6,12,'#4a4552');px(q,x+1,23,4,10,'#575262');px(q,x,30,8,4,'#2f2b35');}
-  px(q,0,34,128,2,'#1f1b24');
-  px(q,0,14,128,8,'#2f2b35');for(let x=0;x<128;x+=8){px(q,x,14,6,8,'#3a3642');px(q,x+2,15,2,6,'#4a4552');}
-  // 용마루
-  px(q,0,12,128,3,'#1a1720');for(let x=4;x<128;x+=16)px(q,x,10,8,3,'#2a2630');
-  CASTLE.wall=w;
-  // 망루 160x200
-  const t=document.createElement('canvas');t.width=160;t.height=200;const r=t.getContext('2d');
-  // 석축 기단
-  for(let y=120;y<200;y+=16)for(let x=0;x<160;x+=32){const off=((y/16)|0)%2?16:0;const sx=(x+off)%160;px(r,sx,y,30,14,['#6e6556','#766d5e','#685f50'][((x+y)/16|0)%3]);px(r,sx,y,30,2,'#8a8170');px(r,sx,y+12,30,2,'#4e4639');}
+  const R=(q,x,y,w,h,c)=>{q.fillStyle=c;q.fillRect(x,y,w,h);};
+  const rnd2=(s)=>{let a=s|0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}};
+  // 석축 그리기: 불규칙 석재, 이끼, 금
+  const masonry=(q,x0,y0,w,h,seed)=>{const r=rnd2(seed);R(q,x0,y0,w,h,'#4e4639');let y=y0;let row=0;
+    while(y<y0+h){const rh=12+Math.floor(r()*6);let x=x0-(row%2?10:0);while(x<x0+w){const bw=18+Math.floor(r()*22);const bx=Math.max(x0,x),bw2=Math.min(x0+w,x+bw)-bx;if(bw2>2){const sh=['#6e6556','#766d5e','#685f50','#726a5a','#7b7262'][Math.floor(r()*5)];R(q,bx,y,bw2,Math.min(rh,y0+h-y),sh);R(q,bx,y,bw2,1,'#8f866f');R(q,bx,y,1,Math.min(rh,y0+h-y),'#857c6a');R(q,bx,y+Math.min(rh,y0+h-y)-2,bw2,2,'#3d372c');R(q,bx+bw2-2,y,2,Math.min(rh,y0+h-y),'#3d372c');
+        if(r()<.14){R(q,bx+2,y+Math.min(rh,y0+h-y)-5,Math.min(8,bw2-4),3,'#4f6b3a');}if(r()<.08){const cx=bx+3+Math.floor(r()*(bw2-6));for(let k=0;k<5;k++)R(q,cx+(k%2),y+2+k*2,1,2,'#3a3328');}}
+      x+=bw+1;}y+=rh+1;row++;}};
+  // 기와 처마 (앞면): 수막새 둥근 끝
+  const eave=(q,x0,y0,w,rows)=>{for(let rr=0;rr<rows;rr++){const y=y0+rr*7;R(q,x0,y,w,7,'#3b3742');for(let x=x0;x<x0+w;x+=8){R(q,x,y,6,7,'#4a4654');R(q,x+1,y+1,4,5,'#595566');R(q,x+6,y,2,7,'#2a2731');}}
+    const y=y0+rows*7;R(q,x0,y,w,2,'#1f1c25');for(let x=x0+1;x<x0+w;x+=8){q.fillStyle='#6a667a';q.beginPath();q.arc(x+3,y+3,3,0,7);q.fill();q.fillStyle='#8a8699';q.beginPath();q.arc(x+3,y+3,1.5,0,7);q.fill();}};
+  // ── 북벽 정면 타일 160x140 ──
+  const w=document.createElement('canvas');w.width=160;w.height=140;const q=w.getContext('2d');
+  masonry(q,0,62,160,78,11);R(q,0,136,160,4,'rgba(0,0,0,.4)');
+  // 배수구
+  R(q,70,100,12,8,'#2a241d');R(q,72,102,8,4,'#15110c');
+  // 성가퀴
+  R(q,0,36,160,26,'#cbc1aa');R(q,0,36,160,3,'#e6ddc7');R(q,0,58,160,4,'#a0967f');for(let x=0;x<160;x+=40){R(q,x+12,44,12,14,'#2a241d');R(q,x+14,46,8,10,'#15110c');R(q,x+10,42,16,2,'#9c927c');}
+  // 서까래
+  R(q,0,30,160,6,'#5a4632');for(let x=2;x<160;x+=10)R(q,x,30,4,6,'#3a2a1a');
+  // 처마 2단 + 용마루
+  eave(q,0,8,160,3);R(q,0,6,160,3,'#1a1720');for(let x=6;x<160;x+=20)R(q,x,3,10,4,'#2a2630');
+  CASTLE.face=w;
+  // ── 성벽 윗길 타일 (가로 160x96: 남벽용) : 위쪽 성가퀴 / 돌 바닥 통로 / 아래쪽 성가퀴 + 바깥 그림자 ──
+  const t=document.createElement('canvas');t.width=160;t.height=96;const p=t.getContext('2d');
+  const walkway=(q2,x0,y0,w2,h2,seed)=>{const r=rnd2(seed);R(q2,x0,y0,w2,h2,'#8a8170');for(let y=y0;y<y0+h2;y+=12)for(let x=x0+((y/12|0)%2?8:0);x<x0+w2;x+=16){const c=['#8f866f','#978e78','#857c6a','#9a917b'][Math.floor(r()*4)];R(q2,x,y,15,11,c);R(q2,x,y,15,1,'#a69d86');R(q2,x,y+10,15,1,'#6e6556');if(r()<.1)R(q2,x+4,y+4,5,3,'#5f7a48');}};
+  const parapet=(q2,x0,y0,w2,inner)=>{ // 높이 18: 회벽 + 총안 + 기와 덮개
+    R(q2,x0,y0,w2,18,'#cbc1aa');R(q2,x0,y0,w2,2,'#e6ddc7');R(q2,x0,y0+16,w2,2,'#9c927c');for(let x=x0+12;x<x0+w2;x+=40){R(q2,x,y0+4,12,10,'#2a241d');R(q2,x+2,y0+6,8,6,'#15110c');}
+    for(let x=x0;x<x0+w2;x+=8){R(q2,x,inner?y0+14:y0,6,4,'#4a4654');R(q2,x+1,inner?y0+15:y0+1,4,2,'#595566');}};
+  parapet(p,0,0,160,false);walkway(p,0,18,160,60,21);parapet(p,0,78,160,true);
+  CASTLE.topH=t;
+  // 세로용 (동·서벽): 회전 대신 직접 그림 96x160
+  const v=document.createElement('canvas');v.width=96;v.height=160;const pv=v.getContext('2d');
+  const parapetV=(q2,x0,y0,h2,inner)=>{R(q2,x0,y0,18,h2,'#cbc1aa');R(q2,x0,y0,2,h2,'#e6ddc7');R(q2,x0+16,y0,2,h2,'#9c927c');for(let y=y0+12;y<y0+h2;y+=40){R(q2,x0+4,y,10,12,'#2a241d');R(q2,x0+6,y+2,6,8,'#15110c');}
+    for(let y=y0;y<y0+h2;y+=8){R(q2,inner?x0+14:x0,y,4,6,'#4a4654');R(q2,inner?x0+15:x0+1,y+1,2,4,'#595566');}};
+  parapetV(pv,0,0,160,false);walkway(pv,18,0,60,160,33);parapetV(pv,78,0,160,true);
+  CASTLE.topV=v;
+  // 바깥쪽 벽면(측면 두께 느낌): 동·서·남벽 바깥 가장자리에 붙이는 좁은 석축 띠
+  const e=document.createElement('canvas');e.width=160;e.height=34;const pe=e.getContext('2d');masonry(pe,0,0,160,34,44);R(pe,0,30,160,4,'rgba(0,0,0,.45)');CASTLE.edgeH=e;
+  const e2=document.createElement('canvas');e2.width=34;e2.height=160;const pe2=e2.getContext('2d');masonry(pe2,0,0,34,160,45);R(pe2,30,0,4,160,'rgba(0,0,0,.45)');CASTLE.edgeV=e2;
+  // ── 망루 176x220 ──
+  const tw=document.createElement('canvas');tw.width=176;tw.height=220;const r=tw.getContext('2d');
+  masonry(r,8,136,160,84,77);R(r,8,216,160,4,'rgba(0,0,0,.4)');
   // 1층 누각
-  px(r,16,80,128,40,'#7a2f22');px(r,16,80,128,3,'#a34534');for(let x=24;x<144;x+=24){px(r,x,86,8,30,'#5a1e14');px(r,x+8,92,8,18,'#2a1a10');}
-  // 1층 지붕
-  px(r,0,66,160,16,'#3f3a44');for(let x=0;x<160;x+=8){px(r,x,66,6,16,'#4a4552');px(r,x+1,67,4,12,'#575262');}px(r,0,80,160,3,'#1f1b24');
-  for(let i=0;i<10;i++){px(r,i,66-i,1,4,'#2f2b35');px(r,159-i,66-i,1,4,'#2f2b35');}
+  R(r,20,94,136,42,'#7a2f22');R(r,20,94,136,3,'#a34534');for(let x=28;x<152;x+=24){R(r,x,100,8,34,'#5a1e14');R(r,x+9,106,7,14,'#2a1a10');R(r,x+9,122,7,10,'#d8a94a');}
+  R(r,16,88,144,6,'#5a4632');for(let x=18;x<160;x+=10)R(r,x,88,4,6,'#3a2a1a');
+  eave(r,0,70,176,2);for(let i=0;i<12;i++){R(r,i,70-i,1,5,'#3b3742');R(r,175-i,70-i,1,5,'#3b3742');}
   // 2층 누각
-  px(r,36,34,88,32,'#7a2f22');px(r,36,34,88,3,'#a34534');for(let x=44;x<116;x+=24){px(r,x,40,8,22,'#5a1e14');px(r,x+8,44,8,12,'#2a1a10');}
-  // 2층 지붕 + 용마루 치미
-  px(r,20,20,120,16,'#3f3a44');for(let x=20;x<140;x+=8){px(r,x,20,6,16,'#4a4552');px(r,x+1,21,4,12,'#575262');}px(r,20,34,120,3,'#1f1b24');
-  for(let i=0;i<12;i++){px(r,20+i,20-i,1,4,'#2f2b35');px(r,139-i,20-i,1,4,'#2f2b35');}
-  px(r,20,16,120,4,'#1a1720');px(r,16,8,8,10,'#d8a94a');px(r,136,8,8,10,'#d8a94a');px(r,78,10,4,8,'#d8a94a');
-  // 깃발
-  px(r,79,0,2,12,'#3a2518');px(r,81,0,14,8,'#c8402e');px(r,83,2,10,4,'#efe6d2');
-  CASTLE.tower=t;
-  // 성문 192x120 (성벽 가운데, 홍예문)
-  const g=document.createElement('canvas');g.width=192;g.height=120;const s=g.getContext('2d');
-  s.drawImage(w,0,0);s.drawImage(w,64,0);s.drawImage(w,128,0);
+  R(r,44,40,88,32,'#7a2f22');R(r,44,40,88,3,'#a34534');for(let x=52;x<128;x+=24){R(r,x,46,8,24,'#5a1e14');R(r,x+9,50,7,12,'#2a1a10');}
+  R(r,40,34,96,6,'#5a4632');for(let x=42;x<136;x+=10)R(r,x,34,4,6,'#3a2a1a');
+  eave(r,24,16,128,2);for(let i=0;i<14;i++){R(r,24+i,16-i,1,5,'#3b3742');R(r,151-i,16-i,1,5,'#3b3742');}
+  R(r,24,12,128,4,'#1a1720');R(r,18,2,10,12,'#d8a94a');R(r,148,2,10,12,'#d8a94a');R(r,84,4,8,8,'#d8a94a');
+  // 깃발 + 등롱
+  R(r,87,-0,2,14,'#3a2518');R(r,89,0,16,9,'#c8402e');R(r,91,2,12,5,'#efe6d2');
+  R(r,30,112,6,8,'#ffb060');R(r,140,112,6,8,'#ffb060');R(r,31,113,4,6,'#ffe0a0');R(r,141,113,4,6,'#ffe0a0');
+  CASTLE.tower=tw;
+  // ── 북쪽 성문 240x140 (정면) ──
+  const g=document.createElement('canvas');g.width=240;g.height=140;const s=g.getContext('2d');
+  s.drawImage(w,0,0);s.drawImage(w,80,0);s.drawImage(w,160,0,80,140,0,0,80,140);
+  masonry(s,60,62,120,78,99);
   // 문루
-  px(s,32,0,128,10,'#3f3a44');for(let x=32;x<160;x+=8){px(s,x,0,6,10,'#4a4552');px(s,x+1,1,4,8,'#575262');}px(s,32,8,128,3,'#1f1b24');
-  px(s,40,10,112,14,'#7a2f22');for(let x=48;x<152;x+=20)px(s,x,13,6,9,'#2a1a10');
-  // 홍예(아치) 통로
-  s.fillStyle='#2b2118';s.beginPath();s.moveTo(72,120);s.lineTo(72,78);s.arc(96,78,24,Math.PI,0);s.lineTo(120,120);s.closePath();s.fill();
-  s.fillStyle='#15110c';s.beginPath();s.moveTo(78,120);s.lineTo(78,80);s.arc(96,80,18,Math.PI,0);s.lineTo(114,120);s.closePath();s.fill();
-  s.strokeStyle='#8a8170';s.lineWidth=3;s.beginPath();s.moveTo(72,120);s.lineTo(72,78);s.arc(96,78,24,Math.PI,0);s.lineTo(120,120);s.stroke();
-  // 현판
-  px(s,80,60,32,12,'#1a1410');s.fillStyle='#d8a94a';s.font='900 10px "Noto Serif KR",serif';s.textAlign='center';s.textBaseline='middle';s.fillText('中原',96,66);
+  R(s,40,2,160,6,'#1a1720');eave(s,40,8,160,2);R(s,48,24,144,16,'#7a2f22');for(let x=56;x<192;x+=20)R(s,x,27,7,10,'#2a1a10');R(s,44,22,152,3,'#a34534');
+  // 홍예 아치
+  s.fillStyle='#2b2118';s.beginPath();s.moveTo(88,140);s.lineTo(88,96);s.arc(120,96,32,Math.PI,0);s.lineTo(152,140);s.closePath();s.fill();
+  s.fillStyle='#120e0a';s.beginPath();s.moveTo(96,140);s.lineTo(96,98);s.arc(120,98,24,Math.PI,0);s.lineTo(144,140);s.closePath();s.fill();
+  s.strokeStyle='#9a9180';s.lineWidth=4;s.beginPath();s.moveTo(88,140);s.lineTo(88,96);s.arc(120,96,32,Math.PI,0);s.lineTo(152,140);s.stroke();
+  for(let a=Math.PI;a<=Math.PI*2;a+=Math.PI/9){const x=120+Math.cos(a)*32,y=96+Math.sin(a)*32;R(s,x-3,y-3,6,6,'#7b7262');}
+  // 문짝 (열림)
+  R(s,70,100,14,40,'#4a2a16');R(s,156,100,14,40,'#4a2a16');for(let y=104;y<136;y+=8){R(s,72,y,10,2,'#2a1a10');R(s,158,y,10,2,'#2a1a10');}
+  // 현판·등롱
+  R(s,100,76,40,14,'#1a1410');R(s,101,77,38,12,'#2a2018');s.fillStyle='#d8a94a';s.font='900 11px "Noto Serif KR",serif';s.textAlign='center';s.textBaseline='middle';s.fillText('中原門',120,83);
+  R(s,78,70,6,9,'#ffb060');R(s,156,70,6,9,'#ffb060');
   CASTLE.gate=g;
-  // 먼 산 (바깥 배경) 512x140 타일
-  const m=document.createElement('canvas');m.width=512;m.height=140;const k=m.getContext('2d');
-  const grad=k.createLinearGradient(0,0,0,140);grad.addColorStop(0,'#2a2a30');grad.addColorStop(1,'#1b1713');k.fillStyle=grad;k.fillRect(0,0,512,140);
-  const ridge=(y0,amp,col,seed)=>{k.fillStyle=col;k.beginPath();k.moveTo(0,140);for(let x=0;x<=512;x+=8){const y=y0+Math.sin(x/512*Math.PI*2*3+seed)*amp+Math.sin(x/512*Math.PI*2*7+seed*2)*amp*.4;k.lineTo(x,y);}k.lineTo(512,140);k.closePath();k.fill();};
-  ridge(50,18,'#33333b',1.3);ridge(72,16,'#2a2a31',4.1);ridge(96,12,'#232228',2.2);
-  // 안개
-  k.fillStyle='rgba(200,195,185,.08)';k.fillRect(0,90,512,50);
+  // ── 윗길용 성문(남·동·서): 통로 사이에 열린 문 구멍 + 문루 지붕(위에서 본 기와) ──
+  const gt=document.createElement('canvas');gt.width=240;gt.height=96;const sg=gt.getContext('2d');
+  sg.drawImage(t,0,0);sg.drawImage(t,80,0);
+  R(sg,84,0,72,96,'#120e0a');R(sg,84,0,3,96,'#9a9180');R(sg,153,0,3,96,'#9a9180');
+  // 위에서 본 문루 지붕 (용마루 가운데, 양쪽 처마)
+  R(sg,60,-4,120,104,'#3b3742');for(let y=0;y<96;y+=8){for(let x=60;x<180;x+=8){R(sg,x,y,6,6,'#4a4654');R(sg,x+1,y+1,4,4,'#595566');}}R(sg,118,0,4,96,'#1a1720');R(sg,60,0,2,96,'#1f1c25');R(sg,178,0,2,96,'#1f1c25');
+  R(sg,112,40,16,16,'#d8a94a');R(sg,116,44,8,8,'#c8402e');
+  CASTLE.gateTop=gt;
+  const gv=document.createElement('canvas');gv.width=96;gv.height=240;const sv=gv.getContext('2d');sv.save();sv.translate(0,240);sv.rotate(-Math.PI/2);sv.drawImage(gt,0,0);sv.restore();CASTLE.gateTopV=gv;
+  // ── 먼 산 ──
+  const m=document.createElement('canvas');m.width=512;m.height=160;const k=m.getContext('2d');
+  const grad=k.createLinearGradient(0,0,0,160);grad.addColorStop(0,'#2b2b33');grad.addColorStop(1,'#1b1713');k.fillStyle=grad;k.fillRect(0,0,512,160);
+  const ridge=(y0,amp,col,seed)=>{k.fillStyle=col;k.beginPath();k.moveTo(0,160);for(let x=0;x<=512;x+=6){const y=y0+Math.sin(x/512*Math.PI*2*3+seed)*amp+Math.sin(x/512*Math.PI*2*7+seed*2)*amp*.4+Math.sin(x/512*Math.PI*2*13+seed*3)*amp*.15;k.lineTo(x,y);}k.lineTo(512,160);k.closePath();k.fill();};
+  ridge(56,20,'#35353e',1.3);ridge(82,16,'#2b2b33',4.1);ridge(108,12,'#23222a',2.2);
+  for(let i=0;i<40;i++){k.fillStyle='rgba(60,80,50,.35)';k.fillRect(Math.random()*512,110+Math.random()*30,2,4);}
+  k.fillStyle='rgba(200,195,185,.07)';k.fillRect(0,100,512,60);
   CASTLE.mount=m;
 }
+const GATES=[{x:0,y:-2200,side:'n'},{x:0,y:2200,side:'s'},{x:-2200,y:0,side:'w'},{x:2200,y:0,side:'e'}];
 function drawCastle(ctx){
-  if(!CASTLE.wall)castleTiles();
-  const W=CASTLE.wall,T=CASTLE.tower,Gt=CASTLE.gate,M=CASTLE.mount;const vx0=G.px-VW/2-220,vx1=G.px+VW/2+220,vy0=G.py-VH/2-260,vy1=G.py+VH/2+220;
-  // 바깥: 어두운 땅 + 먼 산 띠 (성벽 바깥 일정 거리에서 시작)
+  if(!CASTLE.face)castleTiles();
+  const vx0=G.px-VW/2-260,vx1=G.px+VW/2+260,vy0=G.py-VH/2-300,vy1=G.py+VH/2+260;
+  const inside=(x,y,m)=>x>vx0-(m||0)&&x<vx1+(m||0)&&y>vy0-(m||0)&&y<vy1+(m||0);
   ctx.fillStyle='#1b1713';ctx.beginPath();ctx.rect(-MAP-4000,-MAP-4000,2*MAP+8000,2*MAP+8000);ctx.rect(-MAP,-MAP,2*MAP,2*MAP);ctx.fill('evenodd');
   ctx.imageSmoothingEnabled=false;
-  // 사방 먼 산 띠 (성벽 바로 바깥)
-  for(let side=0;side<4;side++){ctx.save();ctx.rotate(side*Math.PI/2);const from=-MAP-2600,to=MAP+2600;
-    for(let x=Math.floor(from/512)*512;x<to;x+=512)ctx.drawImage(M,x,-MAP-250,512,140);ctx.restore();}
+  // 먼 산 (사방)
+  for(let x=-MAP-2600;x<MAP+2600;x+=512)ctx.drawImage(CASTLE.mount,x,-MAP-270,512,160);
+  // 동·서·남 바깥: 안개 띠
+  ctx.fillStyle='rgba(150,145,135,.05)';ctx.fillRect(-MAP-4000,MAP+112,2*MAP+8000,300);ctx.fillRect(-MAP-400,-MAP,300,2*MAP);ctx.fillRect(MAP+112,-MAP,300,2*MAP);
   ctx.fillStyle='rgba(27,23,19,.5)';ctx.beginPath();ctx.rect(-MAP-130,-MAP-130,2*MAP+260,2*MAP+260);ctx.rect(-MAP,-MAP,2*MAP,2*MAP);ctx.fill('evenodd');
-  // 성벽 (북: 안쪽이 아래) — 타일 가로 반복
-  const inside=(x,y)=>x>vx0&&x<vx1&&y>vy0&&y<vy1;
-  const gateAt=0;const GW=192,HW=128,HH=120;
-  // 북벽
-  if(-MAP>vy0-HH&&-MAP<vy1){for(let x=-MAP;x<MAP;x+=HW){if(x+HW<vx0||x>vx1)continue;if(Math.abs(x+HW/2-gateAt)<GW/2+2)continue;ctx.drawImage(W,x,-MAP-HH+16,HW,HH);}
-    if(inside(gateAt,-MAP))ctx.drawImage(Gt,gateAt-GW/2,-MAP-HH+16,GW,HH);}
-  // 남벽 (뒤집어 그림: 안쪽이 위)
-  if(MAP>vy0&&MAP<vy1+HH){for(let x=-MAP;x<MAP;x+=HW){if(x+HW<vx0||x>vx1)continue;if(Math.abs(x+HW/2-gateAt)<GW/2+2)continue;ctx.save();ctx.translate(x,MAP-16);ctx.scale(1,-1);ctx.drawImage(W,0,-HH,HW,HH);ctx.restore();}
-    if(inside(gateAt,MAP)){ctx.save();ctx.translate(gateAt-GW/2,MAP-16);ctx.scale(1,-1);ctx.drawImage(Gt,0,-HH,GW,HH);ctx.restore();}}
-  // 동벽·서벽 (회전)
-  for(const side of [-1,1]){const X=side*MAP;if(X<vx0-HH||X>vx1+HH)continue;
-    for(let y=-MAP;y<MAP;y+=HW){if(y+HW<vy0||y>vy1)continue;if(Math.abs(y+HW/2-gateAt)<GW/2+2)continue;ctx.save();ctx.translate(X,y);ctx.rotate(side>0?-Math.PI/2:Math.PI/2);if(side>0)ctx.drawImage(W,-HW,-HH+16,HW,HH);else{ctx.drawImage(W,0,-HH+16,HW,HH);}ctx.restore();}
-    if(inside(X,gateAt)){ctx.save();ctx.translate(X,gateAt);ctx.rotate(side>0?-Math.PI/2:Math.PI/2);if(side>0)ctx.drawImage(Gt,-GW/2,-HH+16,GW,HH);else ctx.drawImage(Gt,-GW/2,-HH+16,GW,HH);ctx.restore();}}
-  // 모서리 망루 4개 + 각 변 중간 망루(성문 양옆)
-  const towers=[[-MAP,-MAP],[MAP,-MAP],[-MAP,MAP],[MAP,MAP],[-MAP,-900],[-MAP,900],[MAP,-900],[MAP,900],[-900,-MAP],[900,-MAP],[-900,MAP],[900,MAP]];
-  for(const [tx,ty] of towers){if(!inside(tx,ty))continue;ctx.drawImage(T,tx-80,ty-170,160,200);}
-  // 안쪽 성벽 그림자 (바닥에 드리움)
-  ctx.fillStyle='rgba(0,0,0,.18)';ctx.fillRect(-MAP,-MAP,2*MAP,26);ctx.fillRect(-MAP,-MAP,26,2*MAP);
+  const F=CASTLE.face,TH=CASTLE.topH,TV=CASTLE.topV,EH=CASTLE.edgeH,EV=CASTLE.edgeV;
+  // 북벽: 정면 (벽면이 안쪽을 향함). 바닥선 y=-MAP+12
+  if(-MAP>vy0-160&&-MAP<vy1){for(let x=-MAP;x<MAP;x+=160){if(x+160<vx0||x>vx1)continue;if(Math.abs(x+80)<120+2)continue;ctx.drawImage(F,x,-MAP-128,160,140);}
+    if(inside(0,-MAP,200))ctx.drawImage(CASTLE.gate,-120,-MAP-128,240,140);}
+  // 남벽: 윗길 (안쪽 성가퀴가 위), 바깥쪽에 석축 띠
+  if(MAP>vy0-40&&MAP<vy1+140){for(let x=-MAP;x<MAP;x+=160){if(x+160<vx0||x>vx1)continue;if(Math.abs(x+80)<122)continue;ctx.drawImage(TH,x,MAP-18,160,96);ctx.drawImage(EH,x,MAP+78,160,34);}
+    if(inside(0,MAP,200)){ctx.drawImage(CASTLE.gateTop,-120,MAP-18,240,96);ctx.drawImage(EH,-120,MAP+78,160,34);ctx.drawImage(EH,40,MAP+78,80,34,40,MAP+78,80,34);}}
+  // 동벽·서벽: 윗길 세로
+  for(const side of [-1,1]){const X=side*MAP;if(X<vx0-140||X>vx1+140)continue;const x0=side>0?X-18:X-78;
+    for(let y=-MAP;y<MAP;y+=160){if(y+160<vy0||y>vy1)continue;if(Math.abs(y+80)<122)continue;
+      if(side>0){ctx.drawImage(TV,x0,y,96,160);ctx.drawImage(EV,X+78,y,34,160);}else{ctx.save();ctx.translate(X+18,y);ctx.scale(-1,1);ctx.drawImage(TV,0,0,96,160);ctx.restore();ctx.save();ctx.translate(X-78,y);ctx.scale(-1,1);ctx.drawImage(EV,0,0,34,160);ctx.restore();}}
+    if(inside(X,0,200)){if(side>0)ctx.drawImage(CASTLE.gateTopV,x0,-120,96,240);else{ctx.save();ctx.translate(X+18,-120);ctx.scale(-1,1);ctx.drawImage(CASTLE.gateTopV,0,0,96,240);ctx.restore();}}}
+  // 망루: 모서리 4 + 성문 양옆 8
+  const towers=[[-MAP,-MAP],[MAP,-MAP],[-MAP,MAP],[MAP,MAP],[-MAP,-265],[-MAP,265],[MAP,-265],[MAP,265],[-240,-MAP],[240,-MAP],[-240,MAP],[240,MAP]];
+  for(const [tx,ty] of towers){if(!inside(tx,ty,200))continue;ctx.drawImage(CASTLE.tower,tx-88,ty-190,176,220);}
+  // 남·동·서 성문: 안쪽 면에 홍예 통로
+  const arch=(x,y,rot)=>{ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.fillStyle='#9a9180';ctx.fillRect(-44,-6,88,30);ctx.fillStyle='#2b2118';ctx.beginPath();ctx.moveTo(-32,24);ctx.lineTo(-32,8);ctx.arc(0,8,32,Math.PI,0);ctx.lineTo(32,24);ctx.closePath();ctx.fill();ctx.fillStyle='#120e0a';ctx.beginPath();ctx.moveTo(-24,24);ctx.lineTo(-24,10);ctx.arc(0,10,24,Math.PI,0);ctx.lineTo(24,24);ctx.closePath();ctx.fill();ctx.fillStyle='#4a2a16';ctx.fillRect(-40,2,12,22);ctx.fillRect(28,2,12,22);ctx.fillStyle='#ffb060';ctx.fillRect(-46,-2,5,8);ctx.fillRect(41,-2,5,8);ctx.restore();};
+  if(inside(0,MAP,200))arch(0,MAP-42,0);if(inside(-MAP,0,200))arch(-MAP+52,-4,0);if(inside(MAP,0,200))arch(MAP-52,-4,0);
+  // 안쪽 그림자
+  ctx.fillStyle='rgba(0,0,0,.2)';ctx.fillRect(-MAP,-MAP+12,2*MAP,22);ctx.fillRect(-MAP,-MAP,22,2*MAP);
+  // 성문 주변 바닥 (돌길)
+  for(const g of GATES){if(!inside(g.x,g.y,300))continue;ctx.fillStyle='rgba(120,112,95,.35)';const L=380;if(g.side==='n')ctx.fillRect(g.x-40,g.y+12,80,L);else if(g.side==='s')ctx.fillRect(g.x-40,g.y-L-18,80,L);else if(g.side==='w')ctx.fillRect(g.x+18,g.y-40,L,80);else ctx.fillRect(g.x-L-18,g.y-40,L,80);}
 }
 function draw(){
   if(!tile)makeTile();
@@ -1215,6 +1261,7 @@ function draw(){
   ctx.font='700 9px "Noto Serif KR",serif';ctx.textAlign='center';ctx.textBaseline='middle';
   for(const L of LANDMARKS){const [x,y]=toM(L.x,L.y);const ready=!(G.lm[L.k]>0);ctx.fillStyle=ready?'#d8a94a':'#5a5040';ctx.fillRect(x-3,y-3,6,6);if(ready){ctx.strokeStyle='rgba(216,169,74,.6)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,5+Math.sin(G.t*4)*1.5,0,7);ctx.stroke();}ctx.fillStyle='rgba(239,230,210,.8)';ctx.fillText(L.n,x,y-9);}
   ctx.fillStyle='rgba(120,110,90,.6)';for(const b of OBST){const [x,y]=toM(b.x,b.y);if(b.kind==='rock')ctx.fillRect(x-1.5,y-1.5,3,3);else if(b.a===0)ctx.fillRect(x-b.len/2*mk,y-1,b.len*mk,2);else ctx.fillRect(x-1,y-b.len/2*mk,2,b.len*mk);}
+  ctx.fillStyle='#c8402e';for(const g of GATES){const [x,y]=toM(g.x,g.y);ctx.fillRect(x-3,y-3,6,6);}
   for(const c of G.chests){const [x,y]=toM(c.x,c.y);ctx.fillStyle='#ffd080';ctx.fillRect(x-2,y-2,4,4);}
   for(const g of G.gems){if(g.heal){const [x,y]=toM(g.x,g.y);ctx.fillStyle='#f3e2b8';ctx.fillRect(x-1.5,y-1.5,3,3);}}
   for(const e of G.enemies){const [x,y]=toM(e.x,e.y);if(e.boss){ctx.fillStyle='#ff5a3a';ctx.beginPath();ctx.arc(x,y,3.5+Math.sin(G.t*8),0,7);ctx.fill();}else{ctx.fillStyle=e.type==='elite'?'#ff8a5a':'rgba(230,194,58,.8)';ctx.fillRect(x-1,y-1,2,2);}}
