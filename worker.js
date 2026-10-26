@@ -82,8 +82,9 @@ export class SaveStore {
       return ok({ ok: true, rank: all.findIndex(r => r.id === id) + 1, drank });
     }
     if (url.pathname === '/check' || url.pathname === '/claim' || url.pathname === '/owner') {
-      const norm = (n) => String(n || '').trim().replace(/\s+/g, ' ').slice(0, 12);
-      const valid = (n) => /^[가-힣A-Za-z0-9_ ]{2,12}$/.test(n) && !/^\s|\s$/.test(n);
+      const norm = (n) => String(n || '').normalize('NFC').trim().replace(/\s+/g, ' ').slice(0, 12);
+      const BLOCK = ['admin','administrator','gm','mod','moderator','system','운영자','관리자','운영진','관리','시스템','무명','개발자','공지','봇','bot','null','undefined','씨발','시발','병신','지랄','좆','새끼','개새','니미','느금','꺼져','창녀','보지','자지','fuck','shit','bitch','nigger','cunt','dick','pussy'];
+      const valid = (n) => /^[가-힣A-Za-z0-9_ ]{2,12}$/.test(n) && !/^\s|\s$/.test(n) && !BLOCK.some(b => n.toLowerCase().replace(/[\s_]/g, '').includes(b));
       const byName = (await st.get('byName')) || {}, byKey = (await st.get('byKey')) || {};
       if (url.pathname === '/owner') { const key = url.searchParams.get('key') || ''; return ok({ name: byKey[key] || '' }); }
       if (url.pathname === '/check') { const n = norm(url.searchParams.get('name')); if (!valid(n)) return ok({ ok: false, reason: 'invalid' }); return ok({ ok: !byName[n.toLowerCase()], reason: byName[n.toLowerCase()] ? 'taken' : '' }); }

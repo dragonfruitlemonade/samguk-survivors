@@ -1419,12 +1419,12 @@ $('cloudload').onclick=()=>cloudLoad($('cloudin').value);
 cloudPing().then(ok=>{if(ok&&!META.nameOk)showNick();});
 function showNick(){$('nick').hidden=false;$('nickin').value=META.name||'';$('nickmsg').textContent='';setTimeout(()=>$('nickin').focus(),50);}
 let nickBusy=false;
-async function claimNick(){if(nickBusy)return;const n=$('nickin').value.trim().replace(/\s+/g,' ');const msg=$('nickmsg');
+async function claimNick(){if(nickBusy)return;const n=$('nickin').value.normalize('NFC').trim().replace(/\s+/g,' ');const msg=$('nickmsg');
   if(!/^[가-힣A-Za-z0-9_ ]{2,12}$/.test(n)){msg.textContent='한글·영문·숫자 2~12자만 쓸 수 있어요.';return;}
   nickBusy=true;msg.textContent='확인 중…';
   try{const r=await fetch(api('/api/name'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:n,key:cloudKey()})});const d=await r.json();
     if(d.ok){META.name=d.name;META.nameOk=true;saveMeta();$('pname').value=d.name;$('nick').hidden=true;msg.textContent='';sfx('levelup');cloudSave(true);renderStart();}
-    else msg.textContent=d.reason==='taken'?'이미 누가 쓰는 이름이에요. 다른 이름을 골라주세요.':'쓸 수 없는 이름이에요.';}
+    else msg.textContent=d.reason==='taken'?'이미 누가 쓰는 이름이에요. 다른 이름을 골라주세요.':'쓸 수 없는 이름이에요 (운영자 사칭·비속어·특수문자 불가).';}
   catch(e){msg.textContent='서버에 닿지 않아요. 잠시 후 다시 시도해주세요.';}
   nickBusy=false;}
 $('nickok').onclick=claimNick;$('nickin').addEventListener('keydown',e=>{if(e.key==='Enter')claimNick();e.stopPropagation();});
