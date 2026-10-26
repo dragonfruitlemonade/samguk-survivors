@@ -373,14 +373,14 @@ function arcHit(fa,R,dmg,col,kb){for(const e of G.enemies){if(e.dead)continue;co
 function fireWeapon(w,dt){curW=w.id;
   const D=WEAPONS[w.id],lv=w.lv,evo=w.evo,mod=!!w.mod;const GL=evo?D.evo.gl:mod?D.modern.gl:D.gl;
   if(w.id==='halberd'){
-    const n=(evo?6:2+Math.floor(lv/2))+P.amt,R=(evo?100:42+lv*7)*P.area,spd=(evo?4.2:2.4)+lv*.1;w.ang+=spd*dt;w.tick=(w.tick||0)-dt;
+    const n=(evo?6:2+Math.floor(lv/2))+P.amt,R=(evo?108:42+lv*7)*P.area*(mod?1.06:1),spd=(evo?4.2:2.4)+lv*.1;w.ang+=spd*dt;w.tick=(w.tick||0)-dt;
     const dmg=D.dmg+lv*3;
     if(w.tick<=0){w.tick=.22;for(let i=0;i<n;i++){const a=w.ang+i*Math.PI*2/n,bx=G.px+Math.cos(a)*R,by=G.py+Math.sin(a)*R;
       for(const e of G.enemies){if(!e.dead&&Math.hypot(e.x-bx,e.y-by)<e.r+(mod?22:16)){damage(e,dmg*(mod?1.3:1),mod?'#dfe8ff':D.col);e.kx+=Math.cos(a)*200;e.ky+=Math.sin(a)*200;if(mod)sfx('saw');}}
       for(const p of G.eproj){if(Math.hypot(p.x-bx,p.y-by)<24){p.life=0;sparks(p.x,p.y,'#fff',4,200);sfx('block');}}}}
     return;}
   if(w.id==='formation'){
-    const R=(evo?140:48+lv*9)*P.area,n=evo?8:Math.min(8,2+Math.ceil(lv/2)+P.amt),spd=evo?1.3:.9+lv*.05;w.ang+=spd*dt;w.tick=(w.tick||0)-dt;const dmg=4+lv*2;w.n=n;w.R=R;
+    const R=(evo?148:48+lv*9)*P.area*(mod?1.06:1),n=evo?8:Math.min(8,2+Math.ceil(lv/2)+P.amt),spd=evo?1.3:.9+lv*.05;w.ang+=spd*dt;w.tick=(w.tick||0)-dt;const dmg=4+lv*2;w.n=n;w.R=R;
     if(w.tick<=0){w.tick=.24;let any=false;for(let i=0;i<n;i++){const a=w.ang+i*Math.PI*2/n,bx=G.px+Math.cos(a)*R,by=G.py+Math.sin(a)*R;
       for(const e of G.enemies){if(!e.dead&&Math.hypot(e.x-bx,e.y-by)<e.r+14){e.slow=(mod?2.2:1.4)*P.dur;e.slowK=.25;damage(e,dmg,mod?'#9ff':D.col);any=true;if(rng()<.2)glyph(bx,by,mod?'機':['乾','兌','離','震','巽','坎','艮','坤'][i],mod?'#9ff':'#ffd080',16+lv*2,.4);if(mod)G.fx.push({x:e.x,y:e.y,zap:true,x2:bx,y2:by,col:'#9ff',life:.12,max:.12});}}}
       if(evo){for(const e of G.enemies){if(e.dead||e.boss)continue;const d=Math.hypot(e.x-G.px,e.y-G.py);if(d>60&&d<R+60){const a=Math.atan2(G.py-e.y,G.px-e.x);e.kx+=Math.cos(a)*55;e.ky+=Math.sin(a)*55;}}}
@@ -389,24 +389,24 @@ function fireWeapon(w,dt){curW=w.id;
   w.cd-=dt;if(w.cd>0)return;
   const cdm=Math.max(.45,1-lv*.06)*P.cool;const AR=P.area;
   switch(w.id){
-    case 'guandao':{G.atkT=.2;sfx(mod?'laser':'slash');w.cd=D.cd*cdm*(evo?.8:mod?.85:1);const R=(evo?170:76+lv*10)*(mod?1.15:1)*AR,dmg=D.dmg+lv*6;const sides=evo?[1,-1]:[1];const col=evo?'#9ee0c4':mod?'#4df0ff':D.col;
+    case 'guandao':{G.atkT=.2;sfx(mod?'laser':'slash');w.cd=D.cd*cdm*(evo?.8:mod?.85:1);const R=(evo?165:76+lv*10)*(mod?1.08:1)*AR,dmg=D.dmg+lv*6;const sides=evo?[1,-1]:[1];const col=evo?'#9ee0c4':mod?'#4df0ff':D.col;
       for(const s of sides){const fa=Math.atan2(G.fy,G.fxF)+(s<0?Math.PI:0);arcHit(fa,R,dmg,col,90);
         G.fx.push({x:G.px,y:G.py,arc:true,mod,a:fa,R,col,life:.28,max:.28});}
       break;}
-    case 'wushuang':{G.atkT=.2;sfx(mod?'laser':'slash');w.cd=D.cd*cdm*(evo?.75:1);const R=(evo?175:56+lv*12)*(mod?1.15:1)*AR,dmg=(D.dmg+lv*5)*(evo?2:1);const col=evo?'#ffd080':mod?'#ff6ad0':D.col;
+    case 'wushuang':{G.atkT=.2;sfx(mod?'laser':'slash');w.cd=D.cd*cdm*(evo?.75:1);const R=(evo?160:56+lv*12)*(mod?1.08:1)*AR,dmg=(D.dmg+lv*5)*(evo?2:1);const col=evo?'#ffd080':mod?'#ff6ad0':D.col;
       for(const s of [1,-1]){const fa=Math.atan2(G.fy,G.fxF)+(s<0?Math.PI:0);arcHit(fa,R,dmg,col,160);G.fx.push({x:G.px,y:G.py,arc:true,mod,a:fa,R,col,life:.3,max:.3});}
       shake=Math.max(shake,.1);break;}
-    case 'dao':{G.atkT=.2;sfx(mod?'saw':'slash');w.cd=D.cd*cdm*(evo?.7:1);const R=(evo?125:42+lv*9)*(mod?1.1:1)*AR,dmg=D.dmg+lv*5;const col=evo?'#ffb070':mod?'#ffe27a':D.col;
+    case 'dao':{G.atkT=.2;sfx(mod?'saw':'slash');w.cd=D.cd*cdm*(evo?.7:1);const R=(evo?120:42+lv*9)*(mod?1.06:1)*AR,dmg=D.dmg+lv*5;const col=evo?'#ffb070':mod?'#ffe27a':D.col;
       for(const e of G.enemies){if(e.dead)continue;const d=Math.hypot(e.x-G.px,e.y-G.py);if(d<R+e.r){damage(e,dmg,col);const a=Math.atan2(e.y-G.py,e.x-G.px);e.kx+=Math.cos(a)*140;e.ky+=Math.sin(a)*140;}}
       G.fx.push({x:G.px,y:G.py,spin:true,R,col,turns:mod?2:1,life:.42,max:.42});break;}
-    case 'charge':{G.atkT=.2;w.cd=D.cd*cdm*(evo?.5:1);const len=(120+lv*18)*(mod?1.3:1)*(evo?1.7:1)*P.dur;G.dash=.28;G.dashA=Math.atan2(G.fy,G.fxF);G.dashV=len/.28;G.dashDmg=(D.dmg+lv*7)*(mod?1.4:1);G.dashEnd={R:(65+lv*6)*(evo?1.4:1)*AR,dmg:(D.dmg+lv*5)*.8};G.dashCol=evo?'#ffd080':mod?'#9ff':D.col;G.dashHit=[];G.dashGL=GL;sfx(mod?'rail':'hoof');G.fx.push({x:G.px,y:G.py,thrust:true,a:G.dashA,L:len,W:46*AR,col:G.dashCol,life:.35,max:.35,soft:true});
+    case 'charge':{G.atkT=.2;w.cd=D.cd*cdm*(evo?.5:1);const len=Math.min(400,(120+lv*18)*(mod?1.08:1)*(evo?1.25:1)*Math.min(P.dur,1.3));G.dash=.28;G.dashA=Math.atan2(G.fy,G.fxF);G.dashV=len/.28;G.dashDmg=(D.dmg+lv*7)*(mod?1.4:1);G.dashEnd={R:(65+lv*6)*(evo?1.4:1)*AR,dmg:(D.dmg+lv*5)*.8};G.dashCol=evo?'#ffd080':mod?'#9ff':D.col;G.dashHit=[];G.dashGL=GL;sfx(mod?'rail':'hoof');G.fx.push({x:G.px,y:G.py,thrust:true,a:G.dashA,L:len,W:46*AR,col:G.dashCol,life:.35,max:.35,soft:true});
       break;}
     case 'volley':{G.atkT=.2;const ts=nearest(1,620);if(!ts.length){w.cd=.15;break;}w.cd=D.cd*cdm*(evo?.7:1);sfx(mod?'gun':'arrow');const n=(evo?10:mod?7:3)+P.amt,dmg=(D.dmg+lv*3)*(mod?.65:1),t=ts[0],base=Math.atan2(t.y-G.py,t.x-G.px),spread=mod?.9:.4;
       G.fx.push({x:G.px,y:G.py,arc:true,a:base,R:40+lv*3,col:evo?'#ffd0dc':mod?'#ffe27a':D.col,life:.18,max:.18,thin:true});
       for(let i=0;i<n;i++){const a=base+(n>1?(i/(n-1)-.5)*spread:0)+(mod?frnd(-.05,.05):0);G.proj.push({wid:curW,x:G.px,y:G.py,vx:Math.cos(a)*(mod?1100:760),vy:Math.sin(a)*(mod?1100:760),life:mod?.45:1,dmg,col:mod?'#ffe27a':D.col,gl:'矢',pierce:evo?3:1,r:9,hit:[],w:mod?'bullet':'arrow'});}
       break;}
     case 'spear':{G.atkT=.2;w.cd=D.cd*Math.max(.55,1-lv*.05);const dmg=(D.dmg+lv*7),len=(140+lv*16)*(evo?1.1:1)*AR;const dirs=evo?[0,Math.PI/2,Math.PI,-Math.PI/2]:[0];
-      if(mod){sfx('rail');const W=(14+lv*2)*AR,L=len*2;w.alt=!w.alt;const dd=evo?(w.alt?[0,Math.PI]:[Math.PI/2,-Math.PI/2]):dirs;
+      if(mod){sfx('rail');const W=(14+lv*2)*AR,L=len*1.35;w.alt=!w.alt;const dd=evo?(w.alt?[0,Math.PI]:[Math.PI/2,-Math.PI/2]):dirs;
         for(const o of dd){const a=Math.atan2(G.fy,G.fxF)+o;const ca=Math.cos(a),sa=Math.sin(a);let hit=0;
           for(const e of G.enemies){if(e.dead)continue;const dx=e.x-G.px,dy=e.y-G.py;const along=dx*ca+dy*sa,perp=Math.abs(-dx*sa+dy*ca);if(along>-10&&along<L&&perp<W+e.r){damage(e,dmg*1.6,'#b8f0ff');e.kx+=ca*260;e.ky+=sa*260;hit++;}}
           G.fx.push({x:G.px,y:G.py,beam:true,a,L,W,col:'#4df0ff',life:.3,max:.3});
@@ -415,13 +415,13 @@ function fireWeapon(w,dt){curW=w.id;
       else{sfx('thrust');for(const o of dirs){const a=Math.atan2(G.fy,G.fxF)+o,sp=640;G.proj.push({wid:curW,x:G.px,y:G.py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:len/sp,dmg,col:D.col,gl:GL,pierce:99,r:(16+lv*2)*AR,hit:[],w:'spear',lv,heavy:true});G.fx.push({x:G.px,y:G.py,thrust:true,a,L:len,W:(16+lv*2)*AR*1.3,col:evo?'#ffd080':D.col,life:.3,max:.3});}
         G.fx.push({x:G.px,y:G.py,ring:true,R:34+lv*3,col:D.col,life:.2,max:.2});shake=Math.max(shake,.08);}
       break;}
-    case 'dragon':{G.atkT=.2;sfx(mod?'gun':'thrust');w.cd=(mod?.11:D.cd)*Math.max(.5,1-lv*.05);const dmg=(D.dmg+lv*3)*(mod?.55:1),len=(95+lv*12)*(mod?1.7:1);w.ang=(w.ang||0)+(mod?.55:Math.PI*2/6*1.0+.4);
+    case 'dragon':{G.atkT=.2;sfx(mod?'gun':'thrust');w.cd=(mod?.11:D.cd)*Math.max(.5,1-lv*.05);const dmg=(D.dmg+lv*3)*(mod?.55:1),len=(95+lv*12)*(mod?1.25:1);w.ang=(w.ang||0)+(mod?.55:Math.PI*2/6*1.0+.4);
       const dirs=evo?[0,1,2,3,4,5,6,7].map(i=>i*Math.PI/4+(mod?w.ang:0)):Array.from({length:1+P.amt},(_,i)=>w.ang+i*Math.PI*2/(1+P.amt));
       for(const a of dirs){G.proj.push({wid:curW,x:G.px,y:G.py,vx:Math.cos(a)*(mod?1400:1000),vy:Math.sin(a)*(mod?1400:1000),life:len/(mod?1400:1000),dmg,col:mod?'#ffe27a':D.col,gl:GL,pierce:mod?2:99,r:8+lv*.8,hit:[],w:mod?'bullet':'spear',lv});if(!mod)G.fx.push({x:G.px,y:G.py,thrust:true,a,L:len*.9,W:(8+lv*.8)*1.6,col:evo?'#dff':D.col,life:.16,max:.16});}
       break;}
     case 'fire':{sfx(mod?'boom':'fire');w.cd=D.cd*cdm*(evo?.6:1);const n=(evo?3:1+Math.floor((lv-1)/3))+P.amt;const ts=nearest(n+3,520);
       for(let i=0;i<n;i++){const t=ts[Math.floor(rng()*ts.length)];const x=t?t.x:G.px+rnd(-200,200),y=t?t.y:G.py+rnd(-200,200);
-        G.zones.push({wid:curW,x,y,mod,R:(evo?95:30+lv*7)*(mod?1.2:1)*AR,life:(evo?4:3)*P.dur,seed:frnd(0,100),dps:(D.dmg+lv*2)*(evo?1.6:1),col:mod?'#ff8a3a':D.col,gl:GL,tick:0});glyph(x,y,GL,mod?'#ffb070':D.col,30+lv*8,.5);if(mod){G.fx.push({x,y,boom:true,R:(30+lv*7)*1.3,col:'#ffb070',life:.4,max:.4});shake=Math.max(shake,.15);}}
+        G.zones.push({wid:curW,x,y,mod,R:(evo?90:30+lv*7)*(mod?1.1:1)*AR,life:(evo?4:3)*P.dur,seed:frnd(0,100),dps:(D.dmg+lv*2)*(evo?1.6:1),col:mod?'#ff8a3a':D.col,gl:GL,tick:0});glyph(x,y,GL,mod?'#ffb070':D.col,30+lv*8,.5);if(mod){G.fx.push({x,y,boom:true,R:(30+lv*7)*1.15,col:'#ffb070',life:.4,max:.4});shake=Math.max(shake,.15);}}
       break;}
     case 'crossbow':{G.atkT=.2;w.cd=D.cd*cdm*(evo?.7:1);const n=(evo?10:1+Math.floor(lv/2))+P.amt,dmg=D.dmg+lv*3;const ts=nearest(n,600);if(!ts.length){w.cd=.15;break;}sfx(mod?'missile':'arrow');
       for(let i=0;i<n;i++){const t=ts[i%ts.length];let a=Math.atan2(t.y-G.py,t.x-G.px);if(evo||mod)a+=rnd(-.6,.6);
@@ -430,12 +430,12 @@ function fireWeapon(w,dt){curW=w.id;
       break;}
     case 'thunder':{sfx(mod?'laser':'thunder');w.cd=D.cd*cdm*(evo?.45:1);const n=(evo?6:1+Math.floor(lv/2))+P.amt,dmg=D.dmg+lv*7;const ts=nearest(14,560);const col=evo?'#fff2b0':mod?'#b8fff4':D.col;
       for(let i=0;i<n;i++){const t=ts[Math.floor(rng()*ts.length)];if(!t)break;
-        for(const e of G.enemies){if(!e.dead&&Math.hypot(e.x-t.x,e.y-t.y)<(24+lv*5)*(mod?1.3:1)*AR)damage(e,dmg,col);}
+        for(const e of G.enemies){if(!e.dead&&Math.hypot(e.x-t.x,e.y-t.y)<(24+lv*5)*(mod?1.12:1)*AR)damage(e,dmg,col);}
         // 시너지: 불길 위의 벼락 → 폭발
         const z=G.zones.find(z=>!z.enemy&&Math.hypot(z.x-t.x,z.y-t.y)<z.R);if(z){synergy('firethunder');explode({x:t.x,y:t.y,blast:70,dmg:40+lv*6,col:'#ffb070'});z.life=0;}
-        if(mod)G.fx.push({x:t.x,y:t.y,laser:true,R:(24+lv*5)*1.3,col,life:.3,max:.3});else G.fx.push({x:t.x,y:t.y,bolt:true,R:24+lv*5,col,life:.22,max:.22});glyph(t.x,t.y-20,GL,col,30+lv*7,.45);shake=Math.max(shake,.12);}
+        if(mod)G.fx.push({x:t.x,y:t.y,laser:true,R:(24+lv*5)*1.12,col,life:.3,max:.3});else G.fx.push({x:t.x,y:t.y,bolt:true,R:24+lv*5,col,life:.22,max:.22});glyph(t.x,t.y-20,GL,col,30+lv*7,.45);shake=Math.max(shake,.12);}
       break;}
-    case 'warcry':{sfx(mod?'emp':'warcry');w.cd=D.cd*cdm;const R=(evo?250:65+lv*16)*(mod?1.15:1)*AR,dmg=D.dmg+lv*4;const col=mod?'#7de0ff':D.col;
+    case 'warcry':{sfx(mod?'emp':'warcry');w.cd=D.cd*cdm;const R=(evo?240:65+lv*16)*(mod?1.08:1)*AR,dmg=D.dmg+lv*4;const col=mod?'#7de0ff':D.col;
       for(const e of G.enemies){if(e.dead)continue;const d=Math.hypot(e.x-G.px,e.y-G.py);if(d<R+e.r){if(mod)e.slow=1.5*P.dur;if(!e.boss)e.stun=(evo?1.6:1)*P.dur;damage(e,dmg,col);const a=Math.atan2(e.y-G.py,e.x-G.px);const k=evo?420:260;e.kx+=Math.cos(a)*k;e.ky+=Math.sin(a)*k;}}
       let grew=false;for(const z of G.zones){if(!z.enemy&&Math.hypot(z.x-G.px,z.y-G.py)<R+z.R){z.R*=1.3;z.life+=1;grew=true;}}if(grew)synergy('fireshout');
       G.fx.push({x:G.px,y:G.py,ring:true,mod,R,col,life:.45,max:.45});glyph(G.px,G.py-40,GL,col,40+lv*9,.5);shake=Math.max(shake,evo?.3:.15);
