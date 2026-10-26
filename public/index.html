@@ -246,7 +246,7 @@ const ENEMIES={
 const WIN_TIME=20*60,FINALE=18*60;
 let OBST=[];
 function genObst(){OBST=[];const r=mulberry(G.daily?[...todayKey()].reduce((a,c)=>a*31+c.charCodeAt(0)|0,99):(Math.random()*1e9)|0);
-  for(let i=0;i<34;i++){const x=(r()*2-1)*(MAP-200),y=(r()*2-1)*(MAP-200);if(Math.hypot(x,y)<260)continue;if(LANDMARKS.some(L=>Math.hypot(L.x-x,L.y-y)<300))continue;const kind=r()<.35?'wall':'rock';const R=kind==='wall'?0:34+r()*34;const len=kind==='wall'?160+r()*220:0;const a=r()<.5?0:Math.PI/2;OBST.push({x,y,R,kind,len,a,seed:r()});}}
+  for(let i=0;i<34;i++){const x=(r()*2-1)*(MAP-330),y=(r()*2-1)*(MAP-330);if(Math.hypot(x,y)<260)continue;if(LANDMARKS.some(L=>Math.hypot(L.x-x,L.y-y)<300))continue;if((Math.abs(x)<160&&Math.abs(y)>MAP-700)||(Math.abs(y)<160&&Math.abs(x)>MAP-700))continue;const kind=r()<.35?'wall':'rock';const R=kind==='wall'?0:34+r()*34;const len=kind==='wall'?160+r()*220:0;const a=r()<.5?0:Math.PI/2;OBST.push({x,y,R,kind,len,a,seed:r()});}}
 function obstHit(x,y,rad){for(const b of OBST){if(b.kind==='rock'){if(Math.hypot(x-b.x,y-b.y)<b.R+rad)return true;}else{const hx=b.a===0?b.len/2:14,hy=b.a===0?14:b.len/2;if(Math.abs(x-b.x)<hx+rad&&Math.abs(y-b.y)<hy+rad)return true;}}return false;}
 function obstPush(o,rad){for(const b of OBST){if(b.kind==='rock'){const dx=o.x-b.x,dy=o.y-b.y,d=Math.hypot(dx,dy)||1,min=b.R+rad;if(d<min){o.x=b.x+dx/d*min;o.y=b.y+dy/d*min;}}
     else{const hx=b.a===0?b.len/2:14,hy=b.a===0?14:b.len/2;const cx=Math.max(b.x-hx,Math.min(b.x+hx,o.x)),cy=Math.max(b.y-hy,Math.min(b.y+hy,o.y));const dx=o.x-cx,dy=o.y-cy,d=Math.hypot(dx,dy);if(d<rad){if(d<.01){const px=hx-Math.abs(o.x-b.x),py=hy-Math.abs(o.y-b.y);if(px<py)o.x=b.x+(o.x<b.x?-1:1)*(hx+rad);else o.y=b.y+(o.y<b.y?-1:1)*(hy+rad);}else{o.x=cx+dx/d*rad;o.y=cy+dy/d*rad;}}}}}
@@ -940,7 +940,7 @@ function drawProps(ctx,t){
   const C=320;const x0=Math.floor((G.px-VW/2-120)/C),x1=Math.floor((G.px+VW/2+120)/C),y0=Math.floor((G.py-VH/2-120)/C),y1=Math.floor((G.py+VH/2+120)/C);
   for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){
     for(let i=0;i<3;i++){const h=hash(cx*7+i*131,cy*13+i*17);if(h>.42)continue;
-      const px=cx*C+hash(cx+i,cy)*C,py=cy*C+hash(cy+i*3,cx)*C;if(Math.abs(px)>MAP-40||Math.abs(py)>MAP-40)continue;
+      const px=cx*C+hash(cx+i,cy)*C,py=cy*C+hash(cy+i*3,cx)*C;if(Math.abs(px)>MAP-170||Math.abs(py)>MAP-170)continue;
       let k=PROP_KINDS[Math.floor(hash(cx*3+i,cy*5)*PROP_KINDS.length)];
       const nearLM=LANDMARKS.some(L=>Math.hypot(L.x-px,L.y-py)<260);if((k==='tent'||k==='fire')&&!nearLM)k='spear';if(Math.hypot(px,py)<120)continue;
       drawProp(ctx,k,px,py,hash(cx*11+i,cy*3),t);}}
@@ -990,13 +990,13 @@ function castleTiles(){
   const walkway=(q2,x0,y0,w2,h2,seed)=>{const r=rnd2(seed);R(q2,x0,y0,w2,h2,'#8a8170');for(let y=y0;y<y0+h2;y+=12)for(let x=x0+((y/12|0)%2?8:0);x<x0+w2;x+=16){const c=['#8f866f','#978e78','#857c6a','#9a917b'][Math.floor(r()*4)];R(q2,x,y,15,11,c);R(q2,x,y,15,1,'#a69d86');R(q2,x,y+10,15,1,'#6e6556');if(r()<.1)R(q2,x+4,y+4,5,3,'#5f7a48');}};
   const parapet=(q2,x0,y0,w2,inner)=>{ // 높이 18: 회벽 + 총안 + 기와 덮개
     R(q2,x0,y0,w2,18,'#cbc1aa');R(q2,x0,y0,w2,2,'#e6ddc7');R(q2,x0,y0+16,w2,2,'#9c927c');for(let x=x0+12;x<x0+w2;x+=40){R(q2,x,y0+4,12,10,'#2a241d');R(q2,x+2,y0+6,8,6,'#15110c');}
-    for(let x=x0;x<x0+w2;x+=8){R(q2,x,inner?y0+14:y0,6,4,'#4a4654');R(q2,x+1,inner?y0+15:y0+1,4,2,'#595566');}};
+    R(q2,x0,inner?y0+14:y0,w2,4,'#b3a991');for(let x=x0;x<x0+w2;x+=16)R(q2,x+15,inner?y0+14:y0,1,4,'#8c836d');};
   parapet(p,0,0,160,false);walkway(p,0,18,160,60,21);parapet(p,0,78,160,true);
   CASTLE.topH=t;
   // 세로용 (동·서벽): 회전 대신 직접 그림 96x160
   const v=document.createElement('canvas');v.width=96;v.height=160;const pv=v.getContext('2d');
   const parapetV=(q2,x0,y0,h2,inner)=>{R(q2,x0,y0,18,h2,'#cbc1aa');R(q2,x0,y0,2,h2,'#e6ddc7');R(q2,x0+16,y0,2,h2,'#9c927c');for(let y=y0+12;y<y0+h2;y+=40){R(q2,x0+4,y,10,12,'#2a241d');R(q2,x0+6,y+2,6,8,'#15110c');}
-    for(let y=y0;y<y0+h2;y+=8){R(q2,inner?x0+14:x0,y,4,6,'#4a4654');R(q2,inner?x0+15:x0+1,y+1,2,4,'#595566');}};
+    R(q2,inner?x0+14:x0,y0,4,h2,'#b3a991');for(let y=y0;y<y0+h2;y+=16)R(q2,inner?x0+14:x0,y+15,4,1,'#8c836d');};
   parapetV(pv,0,0,160,false);walkway(pv,18,0,60,160,33);parapetV(pv,78,0,160,true);
   CASTLE.topV=v;
   // 바깥쪽 벽면(측면 두께 느낌): 동·서·남벽 바깥 가장자리에 붙이는 좁은 석축 띠
@@ -1039,9 +1039,10 @@ function castleTiles(){
   const gt=document.createElement('canvas');gt.width=240;gt.height=96;const sg=gt.getContext('2d');
   sg.drawImage(t,0,0);sg.drawImage(t,80,0);
   R(sg,84,0,72,96,'#120e0a');R(sg,84,0,3,96,'#9a9180');R(sg,153,0,3,96,'#9a9180');
-  // 위에서 본 문루 지붕 (용마루 가운데, 양쪽 처마)
-  R(sg,60,-4,120,104,'#3b3742');for(let y=0;y<96;y+=8){for(let x=60;x<180;x+=8){R(sg,x,y,6,6,'#4a4654');R(sg,x+1,y+1,4,4,'#595566');}}R(sg,118,0,4,96,'#1a1720');R(sg,60,0,2,96,'#1f1c25');R(sg,178,0,2,96,'#1f1c25');
-  R(sg,112,40,16,16,'#d8a94a');R(sg,116,44,8,8,'#c8402e');
+  // 문루: 돌로 쌓은 문루 상단 (성가퀴로 둘러싼 네모 단) + 통로 구멍
+  masonry(sg,56,-2,128,100,123);R(sg,56,0,128,6,'#cbc1aa');R(sg,56,90,128,6,'#cbc1aa');R(sg,56,0,6,96,'#cbc1aa');R(sg,178,0,6,96,'#cbc1aa');
+  for(let x=64;x<180;x+=24){R(sg,x,1,10,4,'#2a241d');R(sg,x,91,10,4,'#2a241d');}
+  R(sg,84,8,72,80,'#120e0a');R(sg,84,8,3,80,'#9a9180');R(sg,153,8,3,80,'#9a9180');R(sg,116,40,8,16,'#d8a94a');
   CASTLE.gateTop=gt;
   const gv=document.createElement('canvas');gv.width=96;gv.height=240;const sv=gv.getContext('2d');sv.save();sv.translate(0,240);sv.rotate(-Math.PI/2);sv.drawImage(gt,0,0);sv.restore();CASTLE.gateTopV=gv;
   // ── 먼 산 ──
@@ -1067,14 +1068,14 @@ function drawCastle(ctx){
   ctx.fillStyle='rgba(27,23,19,.5)';ctx.beginPath();ctx.rect(-MAP-130,-MAP-130,2*MAP+260,2*MAP+260);ctx.rect(-MAP,-MAP,2*MAP,2*MAP);ctx.fill('evenodd');
   const F=CASTLE.face,TH=CASTLE.topH,TV=CASTLE.topV,EH=CASTLE.edgeH,EV=CASTLE.edgeV;
   // 북벽: 정면 (벽면이 안쪽을 향함). 바닥선 y=-MAP+12
-  if(-MAP>vy0-160&&-MAP<vy1){for(let x=-MAP;x<MAP;x+=160){if(x+160<vx0||x>vx1)continue;if(Math.abs(x+80)<120+2)continue;ctx.drawImage(F,x,-MAP-128,160,140);}
+  if(-MAP>vy0-160&&-MAP<vy1){for(let x=-MAP;x<MAP;x+=160){if(x+160<vx0||x>vx1)continue;ctx.drawImage(F,x,-MAP-128,160,140);}
     if(inside(0,-MAP,200))ctx.drawImage(CASTLE.gate,-120,-MAP-128,240,140);}
   // 남벽: 윗길 (안쪽 성가퀴가 위), 바깥쪽에 석축 띠
-  if(MAP>vy0-40&&MAP<vy1+140){for(let x=-MAP;x<MAP;x+=160){if(x+160<vx0||x>vx1)continue;if(Math.abs(x+80)<122)continue;ctx.drawImage(TH,x,MAP-18,160,96);ctx.drawImage(EH,x,MAP+78,160,34);}
-    if(inside(0,MAP,200)){ctx.drawImage(CASTLE.gateTop,-120,MAP-18,240,96);ctx.drawImage(EH,-120,MAP+78,160,34);ctx.drawImage(EH,40,MAP+78,80,34,40,MAP+78,80,34);}}
+  if(MAP>vy0-40&&MAP<vy1+140){for(let x=-MAP;x<MAP;x+=160){if(x+160<vx0||x>vx1)continue;ctx.drawImage(TH,x,MAP-18,160,96);ctx.drawImage(EH,x,MAP+78,160,34);}
+    if(inside(0,MAP,200))ctx.drawImage(CASTLE.gateTop,-120,MAP-18,240,96);}
   // 동벽·서벽: 윗길 세로
   for(const side of [-1,1]){const X=side*MAP;if(X<vx0-140||X>vx1+140)continue;const x0=side>0?X-18:X-78;
-    for(let y=-MAP;y<MAP;y+=160){if(y+160<vy0||y>vy1)continue;if(Math.abs(y+80)<122)continue;
+    for(let y=-MAP;y<MAP;y+=160){if(y+160<vy0||y>vy1)continue;
       if(side>0){ctx.drawImage(TV,x0,y,96,160);ctx.drawImage(EV,X+78,y,34,160);}else{ctx.save();ctx.translate(X+18,y);ctx.scale(-1,1);ctx.drawImage(TV,0,0,96,160);ctx.restore();ctx.save();ctx.translate(X-78,y);ctx.scale(-1,1);ctx.drawImage(EV,0,0,34,160);ctx.restore();}}
     if(inside(X,0,200)){if(side>0)ctx.drawImage(CASTLE.gateTopV,x0,-120,96,240);else{ctx.save();ctx.translate(X+18,-120);ctx.scale(-1,1);ctx.drawImage(CASTLE.gateTopV,0,0,96,240);ctx.restore();}}}
   // 망루: 모서리 4 + 성문 양옆 8
