@@ -231,14 +231,14 @@ const HEROES=[
 ];
 const ENEMIES={
   bandit:{n:'황건적',gl:'賊',hp:9,spd:78,dmg:4,r:14,xp:.6,gold:1,col:'#c9a227'},
-  soldier:{n:'창병',gl:'兵',hp:28,spd:62,dmg:8,r:16,xp:2,gold:1,col:'#8f9bb0'},
+  soldier:{n:'창병',gl:'兵',hp:28,spd:62,dmg:8,r:16,xp:2.5,gold:1,col:'#8f9bb0'},
   archer:{n:'궁수',gl:'弓',hp:16,spd:85,dmg:6,r:13,xp:2,gold:1,col:'#7fa86b'},
-  bomber:{n:'폭약병',gl:'炸',hp:22,spd:95,dmg:20,r:15,xp:3,gold:2,col:'#ff8a3a'},
-  shield:{n:'방패병',gl:'盾',hp:110,spd:46,dmg:11,r:18,xp:6,gold:3,col:'#8f9bb0'},
-  assassin:{n:'자객',gl:'刺',hp:26,spd:70,dmg:18,r:13,xp:4,gold:3,col:'#6a5a8a'},
-  rider:{n:'기병',gl:'騎',hp:80,spd:98,dmg:12,r:19,xp:5,gold:2,col:'#b86a4a'},
-  tiger:{n:'호랑이',gl:'虎',hp:60,spd:125,dmg:12,r:17,xp:5,gold:2,col:'#e8a23a'},
-  elite:{n:'장수',gl:'將',hp:260,spd:70,dmg:20,r:24,xp:14,gold:10,col:'#c8402e',chest:true},
+  bomber:{n:'폭약병',gl:'炸',hp:22,spd:95,dmg:20,r:15,xp:4,gold:2,col:'#ff8a3a'},
+  shield:{n:'방패병',gl:'盾',hp:110,spd:46,dmg:11,r:18,xp:9,gold:3,col:'#8f9bb0'},
+  assassin:{n:'자객',gl:'刺',hp:26,spd:70,dmg:18,r:13,xp:6,gold:3,col:'#6a5a8a'},
+  rider:{n:'기병',gl:'騎',hp:80,spd:98,dmg:12,r:19,xp:7,gold:2,col:'#b86a4a'},
+  tiger:{n:'호랑이',gl:'虎',hp:60,spd:125,dmg:12,r:17,xp:7,gold:2,col:'#e8a23a'},
+  elite:{n:'장수',gl:'將',hp:260,spd:70,dmg:20,r:24,xp:22,gold:10,col:'#c8402e',chest:true},
   dongzhuo:{n:'동탁',gl:'董',hp:1800,spd:60,dmg:28,r:40,xp:120,gold:60,col:'#c8402e',boss:'동탁',pat:'fire'},
   lubu:{n:'여포',gl:'呂',hp:4200,spd:95,dmg:38,r:42,xp:300,gold:100,col:'#c8402e',boss:'여포',pat:'charge'},
   caocao:{n:'조조',gl:'曹',hp:7000,spd:75,dmg:45,r:44,xp:500,gold:150,col:'#c8402e',boss:'조조',pat:'summon'},
@@ -443,7 +443,7 @@ const GATE_POS=[{x:0,y:-2200,ix:0,iy:1},{x:0,y:2200,ix:0,iy:-1},{x:-2200,y:0,ix:
 function nearGate(maxd){let best=null,bd=maxd;for(const g of GATE_POS){const d=Math.hypot(g.x-G.px,g.y-G.py);if(d<bd){bd=d;best=g;}}return best;}
 function spawnFromGate(type,g){const E=ENEMIES[type];const x=g.x+g.ix*(30+rnd(0,40))+(g.ix?0:rnd(-26,26)),y=g.y+g.iy*(30+rnd(0,40))+(g.iy?0:rnd(-26,26));
   const tt=Math.max(0,G.t-70);const mul=(1+tt/185+Math.pow(Math.max(0,G.t-420)/240,2))*(G.daily?1.1:1)*(E.boss?1.1:1);
-  const e={spawnT:.5,gate:true,id:G.eid++,type,x,y,hp:E.hp*mul,mhp:E.hp*mul,spd:E.spd,dmg:E.dmg,r:E.r,xp:E.xp,gl:E.gl,col:E.col,boss:E.boss,pat:E.pat,pt:0,kx:g.ix*120,ky:g.iy*120,flash:0,dead:false,slow:0,face:Math.atan2(G.py-y,G.px-x),st:0,sh:rnd(0,2)};
+  const e={spawnT:.5,gate:true,id:G.eid++,type,x,y,hp:E.hp*mul,mhp:E.hp*mul,spd:E.spd,dmg:E.dmg,r:E.r,xp:E.xp*(1+Math.min(1,G.t/900)*.5),gl:E.gl,col:E.col,boss:E.boss,pat:E.pat,pt:0,kx:g.ix*120,ky:g.iy*120,flash:0,dead:false,slow:0,face:Math.atan2(G.py-y,G.px-x),st:0,sh:rnd(0,2)};
   G.enemies.push(e);if(!META.cdx.e[type]){META.cdx.e[type]=true;saveMeta();}return e;}
 function spawnEnemy(type,ang,dist){
   const E=ENEMIES[type];if(!E.boss&&!dist){const g=nearGate(820);if(g&&rng()<.55)return spawnFromGate(type,g);}
@@ -451,7 +451,7 @@ function spawnEnemy(type,ang,dist){
   const tt=Math.max(0,G.t-70);const mul=(1+tt/185+Math.pow(Math.max(0,G.t-420)/240,2))*(G.daily?1.1:1)*(E.boss?1.1:1);
   let x=G.px+Math.cos(ang)*d,y=G.py+Math.sin(ang)*d;const B=MAP+120;if(x<-B||x>B||y<-B||y>B){x=G.px-Math.cos(ang)*d;y=G.py-Math.sin(ang)*d;}x=Math.max(-B,Math.min(B,x));y=Math.max(-B,Math.min(B,y));
   {const tmp={x,y};obstPush(tmp,40);x=tmp.x;y=tmp.y;}
-  const e={spawnT:.35,id:G.eid++,type,x,y,hp:E.hp*mul,mhp:E.hp*mul,spd:E.spd,dmg:E.dmg,r:E.r,xp:E.xp,gl:E.gl,col:E.col,boss:E.boss,pat:E.pat,pt:0,kx:0,ky:0,flash:0,dead:false,slow:0,face:Math.atan2(G.py-y,G.px-x),st:0,sh:rnd(0,2)};
+  const e={spawnT:.35,id:G.eid++,type,x,y,hp:E.hp*mul,mhp:E.hp*mul,spd:E.spd,dmg:E.dmg,r:E.r,xp:E.xp*(1+Math.min(1,G.t/900)*.5),gl:E.gl,col:E.col,boss:E.boss,pat:E.pat,pt:0,kx:0,ky:0,flash:0,dead:false,slow:0,face:Math.atan2(G.py-y,G.px-x),st:0,sh:rnd(0,2)};
   G.enemies.push(e);if(!META.cdx.e[type]){META.cdx.e[type]=true;saveMeta();}return e;
 }
 const WAVES=[
@@ -469,7 +469,7 @@ function doSpawns(dt){
     const cap=lowfx?200:300;const bossUp=G.enemies.some(e=>e.boss);G.cnt={shield:0,assassin:0,bomber:0};for(const e of G.enemies){if(G.cnt[e.type]!=null)G.cnt[e.type]++;}const nearLM=LANDMARKS.some(L=>Math.hypot(L.x-G.px,L.y-G.py)<420);let n=G.enemies.length>cap?0:(fin?3:2+Math.floor(t/90));if(bossUp&&!fin)n=Math.round(n*.45);if(nearLM&&!fin)n+=1;
     for(let i=0;i<n;i++){
       let type='bandit';const r=rng();
-      if(t>45&&r<.3)type='soldier';if(t>120&&r<.2)type='archer';if(t>270&&r<.12)type='rider';if(t>150&&r>.92&&r<.96)type='bomber';if(t>240&&r>.86&&r<.9)type='shield';if(t>330&&r>.97)type='assassin';if(t>390&&r<.1)type='tiger';if(t>420&&r<.02)type='elite';
+      if(t>45&&r<(t>480?.55:t>300?.42:.3))type='soldier';if(t>120&&r<.2)type='archer';if(t>270&&r<.12)type='rider';if(t>150&&r>.92&&r<.96)type='bomber';if(t>240&&r>.86&&r<.9)type='shield';if(t>330&&r>.97)type='assassin';if(t>390&&r<.1)type='tiger';if(t>420&&r<.02)type='elite';
       if(bossUp&&(type==='shield'||type==='assassin'||type==='tiger'||type==='bomber'))type='soldier';
       if((type==='shield'&&G.cnt.shield>=4)||(type==='assassin'&&G.cnt.assassin>=3)||(type==='bomber'&&G.cnt.bomber>=4))type='bandit';
       if(fin)type=r<.5?'rider':r<.8?'tiger':'soldier';
@@ -584,8 +584,9 @@ function update(dt){
   if(G.t>=WIN_TIME){endGame(true);return;}
   hud();
 }
-function gainXp(v){G.xp+=v*G.xpmul*(1+.12*(G.passives.book||0));
-  if(G.xp>=G.need){G.xp-=G.need;G.lvl++;G.need=Math.floor(6+G.lvl*4+G.lvl*G.lvl*.55);if(G.lvl>=10&&!META.unl.lvl10){META.unl.lvl10=true;saveMeta();}levelUp();}}
+function xpNeed(l){return l<=20?5+9*(l-1):l<=40?5+9*19+12*(l-20):5+9*19+12*20+15*(l-40);}
+function gainXp(v){v*=1+Math.min(1.6,G.t/480)*.3;G.xp+=v*G.xpmul*(1+.12*(G.passives.book||0));
+  if(G.xp>=G.need){G.xp-=G.need;G.lvl++;G.need=xpNeed(G.lvl);if(G.lvl>=10&&!META.unl.lvl10){META.unl.lvl10=true;saveMeta();}levelUp();}}
 function tut(step){G.tutStep=step;const el=$('tut');const msgs={0:'방향키 또는 화면 드래그로 움직이세요',1:'적을 쓰러뜨리면 떨어지는 보석을 주우세요',2:'경험치가 차면 카드를 골라 강해집니다',3:''};
   el.textContent=msgs[step]||'';el.style.display=msgs[step]?'block':'none';if(step>=3){META.seen.tutorial=true;saveMeta();}}
 
