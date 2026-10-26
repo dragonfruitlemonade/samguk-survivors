@@ -22,13 +22,22 @@ export default {
           return stub.fetch(new Request('https://do/put', { method: 'POST', body }));
         }
       }
+      if (url.pathname === '/api/name') {
+        const stub = env.STORE.get(env.STORE.idFromName('names'));
+        if (req.method === 'GET') return stub.fetch(new Request('https://do/check?name=' + encodeURIComponent(url.searchParams.get('name') || '')));
+        if (req.method === 'POST') { const body = await req.text(); if (body.length > 1024) return bad('too large', 413); return stub.fetch(new Request('https://do/claim', { method: 'POST', body })); }
+      }
       if (url.pathname === '/api/board') {
         const stub = env.STORE.get(env.STORE.idFromName('board'));
         if (req.method === 'GET') return stub.fetch(new Request('https://do/board?mode=' + (url.searchParams.get('mode') || 'all') + '&date=' + (url.searchParams.get('date') || '')));
         if (req.method === 'POST') {
           const body = await req.text();
           if (body.length > 4096) return bad('too large', 413);
-          return stub.fetch(new Request('https://do/submit', { method: 'POST', body }));
+          let s; try { s = JSON.parse(body); } catch { return bad('bad json'); }
+          const names = env.STORE.get(env.STORE.idFromName('names'));
+          const r = await names.fetch(new Request('https://do/owner?key=' + encodeURIComponent(String(s.id || ''))));
+          const o = await r.json(); s.name = o.name || '무명';
+          return stub.fetch(new Request('https://do/submit', { method: 'POST', body: JSON.stringify(s) }));
         }
       }
       return bad('not found', 404);
@@ -71,6 +80,23 @@ export class SaveStore {
         await st.put(k, day); drank = day.findIndex(r => r.id === id) + 1;
       }
       return ok({ ok: true, rank: all.findIndex(r => r.id === id) + 1, drank });
+    }
+    if (url.pathname === '/check' || url.pathname === '/claim' || url.pathname === '/owner') {
+      const norm = (n) => String(n || '').trim().replace(/\s+/g, ' ').slice(0, 12);
+      const valid = (n) => /^[가-힣A-Za-z0-9_ ]{2,12}$/.test(n) && !/^\s|\s$/.test(n);
+      const byName = (await st.get('byName')) || {}, byKey = (await st.get('byKey')) || {};
+      if (url.pathname === '/owner') { const key = url.searchParams.get('key') || ''; return ok({ name: byKey[key] || '' }); }
+      if (url.pathname === '/check') { const n = norm(url.searchParams.get('name')); if (!valid(n)) return ok({ ok: false, reason: 'invalid' }); return ok({ ok: !byName[n.toLowerCase()], reason: byName[n.toLowerCase()] ? 'taken' : '' }); }
+      let b; try { b = JSON.parse(await req.text()); } catch { return bad('bad json'); }
+      const n = norm(b.name), key = String(b.key || '');
+      if (!valid(n)) return ok({ ok: false, reason: 'invalid' });
+      if (!KEY_RE.test(key)) return bad('bad key');
+      const lk = n.toLowerCase();
+      if (byName[lk] && byName[lk] !== key) return ok({ ok: false, reason: 'taken' });
+      const prev = byKey[key]; if (prev && prev.toLowerCase() !== lk) delete byName[prev.toLowerCase()];
+      byName[lk] = key; byKey[key] = n;
+      await st.put('byName', byName); await st.put('byKey', byKey);
+      return ok({ ok: true, name: n });
     }
     if (url.pathname === '/board') {
       const mode = url.searchParams.get('mode'), date = url.searchParams.get('date');

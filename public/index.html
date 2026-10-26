@@ -179,6 +179,12 @@ input.nm{background:var(--paper3);border:1px solid #3d3428;color:var(--fg);font-
   <div class="cards" id="unlockcards"></div>
   <button class="btn" id="unlockok">출진 준비</button>
 </div>
+<div id="nick" class="overlay" hidden style="z-index:16">
+  <h1 style="font-size:clamp(32px,6vw,54px)">이름을 정하라<small>名 號</small></h1>
+  <p class="sub">천하 순위표에 올라갈 이름이에요. 다른 사람과 겹칠 수 없어요. 한글·영문·숫자 2~12자.</p>
+  <div class="row"><input class="nm" id="nickin" maxlength="12" placeholder="예: 상산조자룡" autocomplete="off" style="width:200px;font-size:16px"><button class="btn" id="nickok">이 이름으로</button></div>
+  <p class="sub" id="nickmsg"></p>
+</div>
 <div id="rotate"><div class="ic">📱↻</div><div>가로로 돌리면 더 잘 보여요</div><button class="btn ghost" id="rotateok">그냥 할게요</button></div>
 </div>
 <script>
@@ -1363,7 +1369,7 @@ function heroCard(h){const b=document.createElement('button');const ok=heroUnloc
   const pc=document.createElement('canvas');pc.width=pc.height=168;pc.style.cssText='width:84px;height:84px';const q=pc.getContext('2d');q.setTransform(1.6,0,0,1.6,76,140);drawHero(q,h.id,false,0,h.id==='lubu');b.querySelector('.gl').replaceWith(pc);
   b.querySelector('.nm').textContent=h.name+(ok?'':' 🔒');b.querySelector('.ds').textContent=ok?h.desc:'해금: '+h.unlock.t;b.querySelector('.trait').textContent=ok?h.trait:'';
   const best=META.best[h.id];b.querySelector('.st').textContent=ok?('체력 '+Math.round(h.hp*(1+.08*upLv('hp')))+' · 속도 '+h.spd+' · '+WEAPONS[h.w].name+' '+WEAPONS[h.w].gl+(best?' · 최고 '+Math.floor(best.time/60)+'분 '+Math.floor(best.time%60)+'초':'')):'';
-  if(ok)b.onclick=()=>startGame(h);return b;}
+  if(ok)b.onclick=()=>{if(CLOUD&&!META.nameOk){showNick();return;}startGame(h);};return b;}
 function renderStart(){dailyUI();
   $('goldtotal').textContent='金 '+META.gold;$('metasum').textContent='출진 '+META.runs+'회 · 누적 처치 '+META.kills+' · 해금 '+HEROES.filter(heroUnlocked).length+'/'+HEROES.length;
   const hb=$('heroes');hb.innerHTML='';for(const h of HEROES)hb.appendChild(heroCard(h));
@@ -1390,7 +1396,7 @@ $('importrec').onclick=()=>{const v=$('reccode').value.trim();if(!v.startsWith('
     for(const k in cur.best){const a=cur.best[k],b=mg.best[k]||{};mg.best[k]={time:Math.max(a.time||0,b.time||0),kills:Math.max(a.kills||0,b.kills||0),score:Math.max(a.score||0,b.score||0),wins:Math.max(a.wins||0,b.wins||0)};}
     META=mg;META.unl.guanyu=META.unl.zhangfei=true;saveMeta();renderStart();$('recmsg').textContent='불러왔어요. 두 기기의 기록 중 더 높은 쪽을 남겼습니다.';sfx('levelup');}
   catch(e){$('recmsg').textContent='코드를 읽지 못했어요.';}};
-$('pname').onchange=()=>{META.name=$('pname').value.trim().slice(0,12);saveMeta();};
+$('pname').onchange=async()=>{const n=$('pname').value.trim().slice(0,12);if(CLOUD){$('nickin').value=n;await claimNick();$('pname').value=META.name||'';}else{META.name=n;saveMeta();}};
 renderStart();
 
 /* ---------- 클라우드 저장 (Cloudflare Worker, 로그인 없음) ---------- */
@@ -1405,12 +1411,24 @@ async function cloudSave(silent){if(!(await cloudPing()))return false;try{const 
   if(r.ok){META.cloudAt=Date.now();saveMeta();if(!silent)$('cloudmsg').textContent='저장했어요 ('+new Date().toLocaleTimeString()+')';return true;}}catch(e){}if(!silent)$('cloudmsg').textContent='서버에 저장하지 못했어요. 잠시 후 다시 시도하세요.';return false;}
 async function cloudLoad(key){if(!(await cloudPing()))return;key=(key||'').toUpperCase().trim();if(!/^SG-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(key)){$('cloudmsg').textContent='코드 형식은 SG-XXXX-XXXX 예요.';return;}
   try{const r=await fetch(api('/api/save?key='+key),{cache:'no-store'});if(r.status===404){$('cloudmsg').textContent='그 코드로 저장된 기록이 없어요.';return;}const d=await r.json();if(!d.meta)throw 0;
-    const m=Object.assign(defMeta(),d.meta);m.ckey=key;META=m;META.unl.guanyu=META.unl.zhangfei=true;saveMeta();renderStart();$('cloudkey').textContent=key;$('cloudmsg').textContent='불러왔어요. 이 기기는 이제 코드 '+key+'를 씁니다.';sfx('levelup');}
+    const m=Object.assign(defMeta(),d.meta);m.ckey=key;m.nameOk=!!m.nameOk;META=m;META.unl.guanyu=META.unl.zhangfei=true;saveMeta();renderStart();$('cloudkey').textContent=key;$('cloudmsg').textContent='불러왔어요. 이 기기는 이제 코드 '+key+'를 씁니다.';sfx('levelup');}
   catch(e){$('cloudmsg').textContent='불러오지 못했어요.';}}
 $('cloudcopy').onclick=async()=>{try{await navigator.clipboard.writeText(cloudKey());$('cloudmsg').textContent='저장 코드를 복사했어요. 안전한 곳에 메모해 두세요.';}catch(e){$('cloudmsg').textContent='코드: '+cloudKey();}};
 $('cloudsave').onclick=()=>cloudSave(false);
 $('cloudload').onclick=()=>cloudLoad($('cloudin').value);
-cloudPing();
+cloudPing().then(ok=>{if(ok&&!META.nameOk)showNick();});
+function showNick(){$('nick').hidden=false;$('nickin').value=META.name||'';$('nickmsg').textContent='';setTimeout(()=>$('nickin').focus(),50);}
+let nickBusy=false;
+async function claimNick(){if(nickBusy)return;const n=$('nickin').value.trim().replace(/\s+/g,' ');const msg=$('nickmsg');
+  if(!/^[가-힣A-Za-z0-9_ ]{2,12}$/.test(n)){msg.textContent='한글·영문·숫자 2~12자만 쓸 수 있어요.';return;}
+  nickBusy=true;msg.textContent='확인 중…';
+  try{const r=await fetch(api('/api/name'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:n,key:cloudKey()})});const d=await r.json();
+    if(d.ok){META.name=d.name;META.nameOk=true;saveMeta();$('pname').value=d.name;$('nick').hidden=true;msg.textContent='';sfx('levelup');cloudSave(true);renderStart();}
+    else msg.textContent=d.reason==='taken'?'이미 누가 쓰는 이름이에요. 다른 이름을 골라주세요.':'쓸 수 없는 이름이에요.';}
+  catch(e){msg.textContent='서버에 닿지 않아요. 잠시 후 다시 시도해주세요.';}
+  nickBusy=false;}
+$('nickok').onclick=claimNick;$('nickin').addEventListener('keydown',e=>{if(e.key==='Enter')claimNick();e.stopPropagation();});
+$('nickin').addEventListener('input',async()=>{const n=$('nickin').value.trim();if(!/^[가-힣A-Za-z0-9_ ]{2,12}$/.test(n)){$('nickmsg').textContent='';return;}try{const r=await fetch(api('/api/name?name='+encodeURIComponent(n)));const d=await r.json();if($('nickin').value.trim()!==n)return;$('nickmsg').textContent=d.ok?'✓ 쓸 수 있는 이름':'이미 쓰는 이름이에요';}catch(e){}});
 
 /* ---------- 천하 순위 (공유 DB) ---------- */
 let DB=null,UID=null,dbTried=false;
